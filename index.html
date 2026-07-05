@@ -122,8 +122,12 @@ button{font-family:inherit;cursor:pointer}
 .spark-ring{animation:ringPulse 1.8s ease-out infinite;transform-origin:center;transform-box:fill-box}
 @keyframes ringPulse{0%{opacity:.7;transform:scale(.6)}100%{opacity:0;transform:scale(2.6)}}
 
-/* 自製行情跑馬燈（真實數據） */
-.metric-ticker{border-bottom:1px solid var(--border-strong);overflow:hidden;padding:9px 0;font-family:var(--font-mono);font-size:.74rem;color:var(--ink-2);letter-spacing:.05em}
+/* 自製行情跑馬燈（真實數據）：內容寬度置中的帳票條 */
+.metric-ticker{
+  overflow:hidden;padding:10px 0;font-family:var(--font-mono);font-size:.74rem;color:var(--ink-2);letter-spacing:.05em;
+  mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+}
 .metric-ticker .track{display:flex;gap:56px;width:max-content;animation:tickScroll 30s linear infinite;will-change:transform}
 .metric-ticker:hover .track{animation-play-state:paused}
 @keyframes tickScroll{to{transform:translateX(-50%)}}
@@ -310,7 +314,9 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
   </header>
 
   <!-- 自製行情跑馬燈（真實快照數據，載入後填充） -->
-  <div class="metric-ticker" id="metric-ticker" hidden aria-hidden="true"><div class="track" id="metric-track"></div></div>
+  <div class="wrap">
+    <div class="metric-ticker" id="metric-ticker" hidden aria-hidden="true"><div class="track" id="metric-track"></div></div>
+  </div>
 
   <!-- 回測績效 -->
   <section class="block" id="performance">
