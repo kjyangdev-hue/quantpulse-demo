@@ -31,12 +31,12 @@ function tradingDates(days) {
   return dates.reverse();
 }
 
-/** 隨機遊走＋波動聚集的模擬 K 線 */
-function generateCandles(seed, days) {
+/** 隨機遊走＋波動聚集的模擬 K 線；startPrice 供不同標的縮放（報酬率與 seed 綁定、與起始價無關） */
+function generateCandles(seed, days, startPrice = 780) {
   const rand = mulberry32(seed);
   const dates = tradingDates(days);
   const candles = [];
-  let price = 780;
+  let price = startPrice;
   let vol = 0.014;
   for (let i = 0; i < days; i++) {
     vol = Math.min(0.024, Math.max(0.007, vol + (rand() - 0.5) * 0.004));
