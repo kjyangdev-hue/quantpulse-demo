@@ -67,6 +67,7 @@ button{font-family:inherit;cursor:pointer}
 .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;font-size:1.18rem;color:var(--ink);letter-spacing:.02em}
 .brand svg{flex:none}
 .brand small{font-family:var(--font-mono);font-weight:400;font-size:.66rem;color:var(--brand);letter-spacing:.14em;margin-top:.35em}
+.brand,.market-badge,.btn-pro,.nav-links a{white-space:nowrap}
 .nav-links{display:flex;gap:18px;margin-left:8px;font-size:.88rem}
 .nav-links a{color:var(--ink-2);transition:color .2s}
 .nav-links a:hover{color:var(--brand)}
@@ -178,7 +179,7 @@ button{font-family:inherit;cursor:pointer}
 .table-scroll{overflow-x:auto}
 table.signals{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
 .signals th{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.14em;color:var(--ink-3);text-align:left;padding:12px 20px;border-bottom:1px solid var(--border);font-weight:500}
-.signals td{padding:10px 20px;border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent);color:var(--ink-2)}
+.signals td{padding:10px 20px;border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent);color:var(--ink-2);white-space:nowrap}
 .signals td.mono{color:var(--ink)}
 .signals tr.sig-row{opacity:0;transform:translateY(6px);animation:rowin .45s forwards}
 @keyframes rowin{to{opacity:1;transform:none}}
@@ -285,12 +286,24 @@ footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
   .grid-main{grid-template-columns:1fr}
   .stats{grid-template-columns:repeat(3,1fr)}
 }
+@media (max-width:900px){
+  .market-badge{display:none}
+  .nav-links{gap:13px;font-size:.83rem}
+  .nav-inner{gap:13px}
+  .brand small{display:none}
+}
 @media (max-width:640px){
   .nav-links{display:none}
   .market-badge{display:none}
+  .nav-inner{gap:12px}
+  .brand{font-size:1rem;white-space:nowrap}
+  .brand small{display:none}
+  .btn-pro{white-space:nowrap;padding:8px 14px;font-size:.8rem}
   .stats{grid-template-columns:repeat(2,1fr)}
+  .stats .stat:first-child{grid-column:1/-1}
   #chart-main{height:340px}
   .hero{padding-top:28px}
+  .row2{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -661,15 +674,19 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   try { localStorage.setItem('qp-theme', next); } catch (e) { /* 無痕模式 */ }
   renderChart();
   if (window.applySignalOverlay) window.applySignalOverlay();
+  buildTicker();
 });
 try {
   const saved = localStorage.getItem('qp-theme');
   if (saved && saved !== root.dataset.theme) { root.dataset.theme = saved; renderChart(); }
 } catch (e) { /* 無痕模式 */ }
 
-/* ============ TradingView 跑馬燈（失敗自動隱藏） ============ */
-(function initTicker() {
+/* ============ TradingView 跑馬燈（失敗自動隱藏；主題切換時重建） ============ */
+function buildTicker() {
   const shell = document.getElementById('ticker-shell');
+  const holder = shell.querySelector('.tradingview-widget-container__widget');
+  holder.innerHTML = '';
+  shell.classList.remove('is-hidden');
   const s = document.createElement('script');
   s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
   s.async = true;
@@ -685,9 +702,10 @@ try {
     colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark', locale: 'zh_TW',
   });
   s.onerror = () => shell.classList.add('is-hidden');
-  shell.querySelector('.tradingview-widget-container__widget').appendChild(s);
+  holder.appendChild(s);
   setTimeout(() => { if (!shell.querySelector('iframe')) shell.classList.add('is-hidden'); }, 3500);
-})();
+}
+buildTicker();
 
 /* ============ Toast ============ */
 function showToast(html, type = 'info') {
