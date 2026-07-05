@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>QuantPulse 量化脈動｜AI 量化策略儀表板（模擬展示）</title>
 <meta name="description" content="AI 量化策略儀表板前端技術展示——K 線圖、AI 買賣訊號、模擬訂閱金流。所有數據皆為模擬，不構成投資建議。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://kjyangdev-hue.github.io/quantpulse-demo/">
+<meta property="og:title" content="QuantPulse 量化脈動｜AI 量化策略儀表板">
+<meta property="og:description" content="ECharts K 線＋AI 買賣訊號＋TradingView 即時整合＋模擬訂閱金流。前端技術展示，回測數據皆為模擬。">
+<meta property="og:image" content="https://kjyangdev-hue.github.io/quantpulse-demo/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://kjyangdev-hue.github.io/quantpulse-demo/og.png">
+<meta name="theme-color" content="#0A0B0E">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%230A0B0E'/><rect x='2' y='2' width='28' height='28' fill='none' stroke='%23FFB000' stroke-width='2'/><path d='M7 21 L13 15 L17 18 L25 9' stroke='%23FFB000' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +35,7 @@
   --font-body:"IBM Plex Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
   --font-display:"Noto Serif TC",serif;      /* outlier：僅報頭與 H1 兩處 */
   --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
-  --grid-line:rgba(224,213,186,.045);
+  --scanline:rgba(224,213,186,.03); --vignette:rgba(0,0,0,.46);
   --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px;
 }
 [data-theme="light"]{
@@ -37,7 +47,7 @@
   --up:#C22F35; --down:#0C7A57;
   --ma5:#B67100; --ma20:#2A78D6; --ma60:#B04A62;
   --amber:#8F6300;
-  --grid-line:rgba(58,50,24,.05);
+  --scanline:rgba(58,50,24,.045); --vignette:rgba(58,50,24,.10);
 }
 /* ============ 基底 ============ */
 *{margin:0;padding:0;box-sizing:border-box}
@@ -45,9 +55,11 @@ html{scroll-behavior:smooth;overflow-x:clip}
 body{
   font-family:var(--font-body);color:var(--ink);background:var(--bg);
   min-height:100vh;line-height:1.6;overflow-x:clip;
-  background-image:
-    repeating-linear-gradient(0deg,transparent 0 47px,var(--grid-line) 47px 48px),
-    repeating-linear-gradient(90deg,transparent 0 47px,var(--grid-line) 47px 48px);
+  background-image:repeating-linear-gradient(0deg,var(--scanline) 0 1px,transparent 1px 3px); /* CRT 掃描線 */
+}
+body::before{ /* 磷光螢幕邊角暈影：z-index -1 落在內容之下、掃描線之上 */
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(115% 90% at 50% 35%,transparent 55%,var(--vignette) 100%);
 }
 a{color:var(--brand);text-decoration:none}
 button{font-family:inherit;cursor:pointer}
@@ -115,6 +127,13 @@ button{font-family:inherit;cursor:pointer}
 .card-head{display:flex;align-items:center;gap:12px;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
 .card-title{font-weight:700;font-size:.95rem}
 .card-note{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.04em}
+.symbol-select{
+  font-family:var(--font-body);font-weight:700;font-size:.9rem;color:var(--ink);
+  background:transparent;border:1px solid var(--border);border-radius:var(--radius);
+  padding:4px 8px;cursor:pointer;transition:border-color .15s;
+}
+.symbol-select:hover{border-color:var(--brand)}
+.symbol-select option{background:var(--panel-solid);color:var(--ink)}
 
 /* 圖表卡 */
 .chart-card{position:relative}
@@ -400,7 +419,10 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
   <section class="grid-main" id="engine">
     <div class="card chart-card">
       <div class="card-head">
-        <span class="card-title">台積電 2330（模擬）</span>
+        <select class="symbol-select" id="symbol-select" aria-label="切換標的">
+          <option value="2330">台積電 2330（模擬）</option>
+          <option value="taiex">加權指數 TAIEX（模擬）</option>
+        </select>
         <span class="card-note">240 交易日 · 日 K</span>
         <span class="nav-spacer"></span>
         <div class="chart-tabs" role="tablist" aria-label="圖表切換">
@@ -554,7 +576,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <footer>
   <div class="wrap">
     <p class="disclaimer">
-      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（seed 69）演算法產生之<b>模擬數據</b>；
+      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（2330：seed 69／TAIEX：seed 99）演算法產生之<b>模擬數據</b>；
       「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部跑馬燈、「TradingView 即時」圖表分頁與側欄技術面儀表為
       TradingView 第三方元件（<b>真實市場數據</b>，非模擬）。本頁所有內容不構成投資建議。
     </p>
@@ -566,20 +588,26 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
-/* ============ 資料初始化 ============ */
-const SEED = 69, DAYS = 240;
-const candles = QP.generateCandles(SEED, DAYS);
+/* ============ 資料初始化（可切換標的） ============ */
+const DAYS = 240;
+const SYMBOLS = {
+  '2330': { label: '台積電 2330（模擬）', seed: 69, start: 780 },
+  'taiex': { label: '加權指數 TAIEX（模擬）', seed: 99, start: 20000 },
+};
+let candles = QP.generateCandles(SYMBOLS['2330'].seed, DAYS, SYMBOLS['2330'].start);
 const fmt = (n) => n.toLocaleString('zh-Hant-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /* 收盤價統計卡 */
-(function initPriceStat() {
+function updatePriceStat() {
   const last = candles[candles.length - 1], prev = candles[candles.length - 2];
   const chg = last.close - prev.close, pct = (chg / prev.close) * 100;
   document.getElementById('stat-price').textContent = fmt(last.close);
   const d = document.getElementById('stat-price-delta');
   d.textContent = `${chg >= 0 ? '▲' : '▼'} ${fmt(Math.abs(chg))}（${chg >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(2)}%）`;
+  d.classList.remove('up', 'down');
   d.classList.add(chg >= 0 ? 'up' : 'down');
-})();
+}
+updatePriceStat();
 
 /* ============ 主題 ============ */
 const root = document.documentElement;
@@ -947,6 +975,34 @@ function runAiScan() {
   }, 1500);
 }
 document.getElementById('btn-ai-scan').addEventListener('click', runAiScan);
+
+/* ============ 標的切換：重生數據、清空分析、重繪 ============ */
+function resetAnalysis() {
+  state.signals = null;
+  state.perf = null;
+  const units = { winRate: '%', totalReturn: '%', maxDrawdown: '%', sharpe: '' };
+  for (const [key, unit] of Object.entries(units)) {
+    const el = document.querySelector(`[data-stat="${key}"]`);
+    el.innerHTML = `--${unit ? `<span class="unit">${unit}</span>` : ''}`;
+    const tile = el.closest('.stat');
+    tile.classList.add('pending');
+    tile.querySelector('.delta').textContent = '執行 AI 分析後更新';
+  }
+  document.getElementById('signal-table-body').innerHTML = '';
+  document.getElementById('signal-empty').style.display = '';
+  document.getElementById('signal-count').textContent = '';
+  document.getElementById('panel-perf').classList.remove('show');
+  document.querySelector('#btn-ai-scan .btn-label').textContent = '啟動 AI 策略分析';
+}
+document.getElementById('symbol-select').addEventListener('change', (e) => {
+  const cfg = SYMBOLS[e.target.value];
+  candles = QP.generateCandles(cfg.seed, DAYS, cfg.start);
+  resetAnalysis();
+  renderChart();
+  updatePriceStat();
+  document.getElementById('chart-main').setAttribute('aria-label', `${cfg.label} 日 K 線圖，含 MA5、MA20、MA60 均線與成交量`);
+  if (window.showChartTab) window.showChartTab('sim');
+});
 
 /* ============ Pro 訂閱模擬結帳：form → processing → success ============ */
 (function initCheckout() {
