@@ -8,7 +8,7 @@
 node scripts/fetch-data.mjs   # 更新 data/ 六標的快照（2330/TAIEX/0050/2317/NVDA/BTC）
 ```
 
-GitHub Actions（`.github/workflows/update-data.yml`）每日台北 18:30 自動執行並 commit 有變動的快照。
+GitHub Actions（`.github/workflows/update-data.yml`）設定為每日台北 18:30 自動執行並 commit 有變動的快照（註：新帳號的 Actions 排程可能延遲啟用，屆時以上述指令手動更新即可）。
 
 ## 結構
 
