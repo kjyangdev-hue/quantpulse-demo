@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantPulse 量化脈動｜AI 量化策略儀表板（模擬展示）</title>
-<meta name="description" content="AI 量化策略儀表板前端技術展示——K 線圖、AI 買賣訊號、模擬訂閱金流。所有數據皆為模擬，不構成投資建議。">
+<title>QuantPulse 量化脈動｜AI 量化策略平台（模擬展示）</title>
+<meta name="description" content="QuantPulse——AI 量化訊號引擎、多策略回測、TradingView 即時整合與訂閱金流的 B2B SaaS 展示。所有回測數據皆為模擬，不構成投資建議。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://kjyangdev-hue.github.io/quantpulse-demo/">
-<meta property="og:title" content="QuantPulse 量化脈動｜AI 量化策略儀表板">
-<meta property="og:description" content="ECharts K 線＋AI 買賣訊號＋TradingView 即時整合＋模擬訂閱金流。前端技術展示，回測數據皆為模擬。">
+<meta property="og:title" content="QuantPulse 量化脈動｜AI 量化策略平台">
+<meta property="og:description" content="AI 訊號引擎＋多策略回測＋TradingView 即時整合＋訂閱金流。前端技術展示，回測數據皆為模擬。">
 <meta property="og:image" content="https://kjyangdev-hue.github.io/quantpulse-demo/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -20,23 +20,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@900&display=swap" rel="stylesheet">
 <style>
-/* Phosphor Ledger · 依 ui-ux-pro-max（Data-Dense Dashboard × Terminal CLI）與 hallmark slop gates 重刷
-   critique: P4 H4 E4 S4 R4 V4 · contrast: pass · tokens: locked */
+/* Phosphor Ledger 設計系統（與 app.html 同源 token） */
 :root{
   --bg:#0A0B0E;
   --panel:#101216; --panel-solid:#101216; --panel-2:#0D0F13;
   --border:rgba(224,213,186,.14); --border-strong:rgba(224,213,186,.30);
   --ink:#EDE8DC; --ink-2:#A8A292; --ink-3:#6F6A5C;
   --brand:#FFB000; --brand-deep:#C98500; --brand-ink:#1A1206;
-  --up:#E5484D; --down:#17A673;              /* 台股慣例：紅漲綠跌（已通過 CVD 驗證） */
-  --ma5:#C98500; --ma20:#3987E5; --ma60:#C4586F;
+  --up:#E5484D; --down:#17A673;
   --amber:#FFB000;
   --radius:2px; --radius-sm:2px;
   --font-body:"IBM Plex Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
-  --font-display:"Noto Serif TC",serif;      /* outlier：僅報頭與 H1 兩處 */
+  --font-display:"Noto Serif TC",serif;
   --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
   --scanline:rgba(224,213,186,.03); --vignette:rgba(0,0,0,.46);
-  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px; --space-7:48px; --space-8:72px;
 }
 [data-theme="light"]{
   --bg:#F5F2EA;
@@ -45,19 +43,17 @@
   --ink:#201D14; --ink-2:#575240; --ink-3:#8A8471;
   --brand:#8F6300; --brand-deep:#6E4C00; --brand-ink:#FFFDF6;
   --up:#C22F35; --down:#0C7A57;
-  --ma5:#B67100; --ma20:#2A78D6; --ma60:#B04A62;
   --amber:#8F6300;
   --scanline:rgba(58,50,24,.045); --vignette:rgba(58,50,24,.10);
 }
-/* ============ 基底 ============ */
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth;overflow-x:clip}
 body{
   font-family:var(--font-body);color:var(--ink);background:var(--bg);
   min-height:100vh;line-height:1.6;overflow-x:clip;
-  background-image:repeating-linear-gradient(0deg,var(--scanline) 0 1px,transparent 1px 3px); /* CRT 掃描線 */
+  background-image:repeating-linear-gradient(0deg,var(--scanline) 0 1px,transparent 1px 3px);
 }
-body::before{ /* 磷光螢幕邊角暈影：z-index -1 落在內容之下、掃描線之上 */
+body::before{
   content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
   background:radial-gradient(115% 90% at 50% 35%,transparent 55%,var(--vignette) 100%);
 }
@@ -71,1063 +67,434 @@ button{font-family:inherit;cursor:pointer}
   html{scroll-behavior:auto}
 }
 
-/* ============ 頂部狀態列 ============ */
-.nav{
-  position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border-strong);
-  background:var(--bg);
-}
-.nav-inner{display:flex;align-items:center;gap:16px;height:52px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-weight:600;font-size:.92rem;color:var(--ink);letter-spacing:.1em}
-.brand svg{flex:none}
+/* ============ 導覽 ============ */
+.nav{position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border-strong);background:var(--bg)}
+.nav-inner{display:flex;align-items:center;gap:18px;height:52px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-weight:600;font-size:.92rem;color:var(--ink);letter-spacing:.1em;white-space:nowrap}
 .brand small{font-weight:400;font-size:.66rem;color:var(--brand);letter-spacing:.18em}
-.brand,.market-badge,.btn-pro{white-space:nowrap}
+.nav-links{display:flex;gap:20px;margin-left:12px;font-size:.86rem}
+.nav-links a{color:var(--ink-2);white-space:nowrap;transition:color .15s}
+.nav-links a:hover{color:var(--brand)}
 .nav-spacer{flex:1}
-.market-badge{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:.7rem;color:var(--ink-2);border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;letter-spacing:.06em}
-.market-badge .dot{width:6px;height:6px;background:var(--brand);animation:blinkdot 1.6s steps(2) infinite}
-@keyframes blinkdot{50%{opacity:.25}}
 .icon-btn{display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;color:var(--ink-2);transition:color .15s,border-color .15s}
 .icon-btn:hover{color:var(--brand);border-color:var(--brand)}
-.btn-pro{
-  font-family:var(--font-mono);font-weight:600;font-size:.8rem;letter-spacing:.06em;
-  color:var(--brand);border:1px solid var(--brand);border-radius:var(--radius);padding:8px 16px;
-  background:transparent;transition:background-color .12s,color .12s;
+.btn-solid{
+  display:inline-block;font-family:var(--font-mono);font-weight:600;font-size:.86rem;letter-spacing:.04em;white-space:nowrap;
+  color:var(--brand-ink);background:var(--brand);border:1px solid var(--brand);border-radius:var(--radius);
+  padding:10px 20px;transition:background-color .12s,color .12s;text-align:center;
 }
-.btn-pro:hover{background:var(--brand);color:var(--brand-ink)}
-.btn-pro:active{transform:translateY(1px)}
+.btn-solid:hover{background:transparent;color:var(--brand)}
+.btn-solid:active{transform:translateY(1px)}
+.btn-ghost{
+  display:inline-block;font-family:var(--font-mono);font-weight:600;font-size:.86rem;letter-spacing:.04em;white-space:nowrap;
+  color:var(--brand);background:transparent;border:1px solid var(--brand);border-radius:var(--radius);
+  padding:10px 20px;transition:background-color .12s,color .12s;text-align:center;
+}
+.btn-ghost:hover{background:var(--brand);color:var(--brand-ink)}
+.btn-ghost:active{transform:translateY(1px)}
+.nav .btn-solid{padding:8px 16px;font-size:.8rem}
 
-/* ============ 跑馬燈 ============ */
-.ticker-shell{border-bottom:1px solid var(--border);height:46px;overflow:hidden;position:relative}
-.ticker-shell.is-hidden{display:none}
+/* ============ 進場動畫 ============ */
+.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease-out,transform .55s ease-out}
+.js .reveal.in{opacity:1;transform:none}
 
-/* ============ 頁首區 ============ */
-.hero{padding:36px 0 4px}
-.hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(1.65rem,3.4vw,2.45rem);letter-spacing:.01em;margin:4px 0 2px;line-height:1.15}
-.hero .sub{color:var(--ink-2);font-size:.92rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.sim-badge{font-family:var(--font-mono);font-size:.66rem;color:var(--amber);border:1px solid var(--amber);border-radius:var(--radius);padding:2px 8px;letter-spacing:.08em}
+/* ============ Hero ============ */
+.hero{padding:76px 0 96px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:var(--space-7);align-items:center}
+.hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(2rem,4.4vw,3.2rem);line-height:1.18;letter-spacing:.01em}
+.hero h1 em{font-style:normal;color:var(--brand)}
+.hero .lede{margin-top:14px;font-size:1.02rem;color:var(--ink-2);max-width:34em}
+.hero-cta{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+.sim-badge{display:inline-block;font-family:var(--font-mono);font-size:.66rem;color:var(--amber);border:1px solid var(--amber);border-radius:var(--radius);padding:2px 8px;letter-spacing:.08em;margin-bottom:14px}
+/* hero 圖卡 */
+.hero-card{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
+.hero-card .hc-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.hero-card .hc-title{font-weight:700;font-size:.85rem}
+.hero-card .hc-note{font-family:var(--font-mono);font-size:.64rem;color:var(--ink-3)}
+.hero-card svg.spark{display:block;width:100%;height:auto}
+.hero-card .hc-stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border)}
+.hero-card .hc-stat{padding:10px 14px}
+.hero-card .hc-stat+.hc-stat{border-left:1px solid var(--border)}
+.hero-card .hc-stat .l{font-family:var(--font-mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.1em}
+.hero-card .hc-stat .v{font-family:var(--font-mono);font-size:1.05rem;font-weight:600}
+.hero-card .hc-stat .v.pos{color:var(--up)}
 
-/* ============ 統計列（帳票式：單一容器＋hairline 分欄） ============ */
-.stats{
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin:var(--space-5) 0;
+/* ============ 區段共用 ============ */
+section.block{padding:var(--space-8) 0}
+.sec-head{margin-bottom:var(--space-6)}
+.sec-head h2{font-family:var(--font-display);font-weight:900;font-size:clamp(1.5rem,3vw,2.1rem)}
+.sec-head p{color:var(--ink-2);margin-top:8px;max-width:44em}
+.rule{border:none;border-top:1px solid var(--border-strong)}
+
+/* ============ 績效帶 ============ */
+.perf-band{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden;
 }
-.stat{position:relative;padding:var(--space-3) var(--space-4)}
-.stat+.stat{border-left:1px solid var(--border)}
-.stat .label{font-family:var(--font-mono);font-size:.66rem;color:var(--ink-3);letter-spacing:.12em}
-.stat .value{font-family:var(--font-mono);font-size:1.4rem;font-weight:500;margin-top:2px;font-variant-numeric:tabular-nums}
-.stat .value .unit{font-size:.75rem;color:var(--ink-3);margin-left:2px}
-.stat .delta{font-family:var(--font-mono);font-size:.7rem;margin-top:2px;color:var(--ink-3)}
-.stat .delta.up{color:var(--up)}
-.stat .delta.down{color:var(--down)}
-.stat.pending .value{color:var(--ink-3)}
+.perf-cell{padding:var(--space-4) var(--space-5)}
+.perf-cell+.perf-cell{border-left:1px solid var(--border)}
+.perf-cell .l{font-family:var(--font-mono);font-size:.66rem;color:var(--ink-3);letter-spacing:.12em}
+.perf-cell .v{font-family:var(--font-mono);font-size:1.7rem;font-weight:600;margin-top:2px}
+.perf-cell .v.pos{color:var(--up)}
+.perf-note{margin-top:10px;font-size:.76rem;color:var(--ink-3)}
 
-/* ============ 主格線 ============ */
-.grid-main{display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto 1fr;gap:var(--space-3);align-items:start}
-.grid-main aside{grid-column:2;grid-row:1 / span 2}
-.grid-main .chart-card{grid-column:1}
-.grid-main .signal-card{grid-column:1;align-self:stretch;display:flex;flex-direction:column}
-.grid-main .signal-card .empty-state{flex:1;display:grid;place-items:center;align-content:center}
-.card{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
-.card-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
-.card-title{font-weight:700;font-size:.95rem}
-.card-note{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.04em;white-space:nowrap}
-.symbol-select{
-  font-family:var(--font-body);font-weight:700;font-size:.9rem;color:var(--ink);
-  background:transparent;border:1px solid var(--border);border-radius:var(--radius);
-  padding:4px 8px;cursor:pointer;transition:border-color .15s;
-}
-.symbol-select:hover{border-color:var(--brand)}
-.symbol-select option{background:var(--panel-solid);color:var(--ink)}
+/* ============ 功能卡 ============ */
+.features{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3)}
+.feature{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);padding:var(--space-5)}
+.feature .f-icon{width:38px;height:38px;border:1px solid var(--border);border-radius:var(--radius);display:grid;place-items:center;color:var(--brand);margin-bottom:14px}
+.feature h3{font-size:1.02rem;font-weight:700}
+.feature p{font-size:.88rem;color:var(--ink-2);margin-top:6px}
+.feature .f-tag{display:inline-block;margin-top:12px;font-family:var(--font-mono);font-size:.66rem;color:var(--ink-3);letter-spacing:.08em;border:1px dashed var(--border);border-radius:var(--radius);padding:2px 8px}
 
-/* 圖表卡 */
-.chart-card{position:relative}
-#chart-main{width:100%;height:460px}
-#tv-chart{width:100%;height:460px}
-#tv-chart iframe{border:none}
-.chart-tabs{display:flex;gap:2px}
-.chart-tab{
-  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.04em;white-space:nowrap;
-  color:var(--ink-3);background:transparent;border:1px solid transparent;border-bottom:2px solid transparent;
-  border-radius:var(--radius);padding:5px 10px;transition:color .15s,border-color .15s;
-}
-.chart-tab:hover{color:var(--ink)}
-.chart-tab.selected{color:var(--brand);border-bottom-color:var(--brand)}
-.chart-tab:active{transform:translateY(1px)}
-#tv-ta-section.is-hidden{display:none}
-#tv-ta{min-height:360px;position:relative}
-#tv-ta::after{
-  content:"載入即時數據…";position:absolute;inset:0;display:grid;place-items:center;
-  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.22em;color:var(--ink-3);
-  animation:blink 1.2s steps(2) infinite;pointer-events:none;
-}
-#tv-ta-section.loaded #tv-ta::after{display:none}
-.ta-note{font-size:.7rem;color:var(--ink-3);padding:0 var(--space-4) var(--space-3);text-align:center}
-.scan-overlay{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;overflow:hidden}
-.scan-overlay.active{display:block}
-.scan-overlay .beam{
-  position:absolute;top:0;bottom:0;width:110px;left:-130px;
-  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--brand) 10%,transparent) 45%,color-mix(in srgb,var(--brand) 38%,transparent) 50%,color-mix(in srgb,var(--brand) 10%,transparent) 55%,transparent);
-  animation:sweep 1.4s cubic-bezier(.4,0,.6,1) infinite;
-}
-@keyframes sweep{0%{left:-130px}100%{left:110%}}
-.scan-overlay .scan-tag{
-  position:absolute;top:12px;right:14px;font-family:var(--font-mono);font-size:.68rem;color:var(--brand);
-  border:1px solid var(--brand);border-radius:var(--radius);padding:3px 10px;
-  background:var(--bg);animation:blink 1s steps(2) infinite;
-}
-@keyframes blink{50%{opacity:.45}}
+/* ============ 產品展示 ============ */
+.showcase{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
+.showcase figure{margin:0;border-bottom:1px solid var(--border)}
+.showcase img{display:block;width:100%;height:auto}
+.showcase .sc-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:var(--space-4) var(--space-5)}
+.showcase .sc-foot p{font-size:.88rem;color:var(--ink-2);flex:1;min-width:220px}
 
-/* 策略面板 */
-.panel-title{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.2em;color:var(--brand);padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
-.strategies{display:flex;flex-direction:column;gap:var(--space-2);padding:var(--space-3)}
-.strategy{
-  position:relative;display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
-  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;
-  transition:border-color .15s,background-color .15s;color:var(--ink);
+/* ============ 定價 ============ */
+.pricing{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-3);align-items:stretch}
+.plan{position:relative;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);padding:var(--space-5)}
+.plan.hot{border-color:var(--brand)}
+.plan .p-flag{
+  position:absolute;top:-1px;right:14px;font-family:var(--font-mono);font-size:.62rem;letter-spacing:.14em;
+  color:var(--brand-ink);background:var(--brand);border-radius:0 0 var(--radius) var(--radius);padding:3px 10px;
 }
-.strategy:hover{border-color:var(--border-strong)}
-.strategy:active{transform:translateY(1px)}
-.strategy.selected{border-color:var(--brand);background:color-mix(in srgb,var(--brand) 6%,var(--panel-2))}
-.strategy .s-icon{flex:none;width:32px;height:32px;border-radius:var(--radius);display:grid;place-items:center;border:1px solid var(--border);color:var(--brand)}
-.strategy .s-name{font-weight:700;font-size:.88rem}
-.strategy .s-desc{font-size:.75rem;color:var(--ink-3);line-height:1.5}
-.strategy .s-check{position:absolute;top:8px;right:10px;font-family:var(--font-mono);font-size:.66rem;color:var(--brand);opacity:0;transition:opacity .15s}
-.strategy.selected .s-check{opacity:1}
-.strategy.locked{opacity:.7}
-.strategy.locked .s-icon{color:var(--amber)}
-.strategy.locked .s-lock{position:absolute;top:8px;right:10px;display:flex;align-items:center;gap:4px;font-family:var(--font-mono);font-size:.64rem;color:var(--amber);letter-spacing:.08em}
-.panel-cta{padding:var(--space-3)}
-.btn-scan{
-  width:100%;border:1px solid var(--brand);border-radius:var(--radius);padding:13px 16px;
-  font-family:var(--font-mono);font-size:.95rem;font-weight:600;letter-spacing:.04em;white-space:nowrap;
-  color:var(--brand-ink);background:var(--brand);
-  transition:background-color .12s,color .12s;
-}
-.btn-scan:hover{background:transparent;color:var(--brand)}
-.btn-scan:active{transform:translateY(1px)}
-.btn-scan:disabled{cursor:wait;opacity:.55}
-.btn-scan .spinner{display:none;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:8px}
-.btn-scan.loading .spinner{display:inline-block}
-@keyframes spin{to{transform:rotate(360deg)}}
-.panel-perf{padding:0 var(--space-3) var(--space-3);display:none;flex-direction:column;gap:6px}
-.panel-perf.show{display:flex}
-.perf-row{display:flex;justify-content:space-between;font-size:.8rem;color:var(--ink-2);border-bottom:1px dashed var(--border);padding:4px 2px}
-.perf-row b{font-family:var(--font-mono);color:var(--ink)}
-.upgrade-hint{padding:0 var(--space-3) var(--space-3)}
-.btn-upgrade-link{
-  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;white-space:nowrap;
-  background:transparent;border:1px dashed var(--amber);color:var(--amber);border-radius:var(--radius);
-  padding:9px;font-size:.8rem;font-family:var(--font-mono);transition:background-color .15s;
-}
-.btn-upgrade-link:hover{background:color-mix(in srgb,var(--amber) 10%,transparent)}
+.plan h3{font-size:1rem;font-weight:700}
+.plan .p-price{font-family:var(--font-mono);font-size:1.9rem;font-weight:600;margin-top:8px}
+.plan .p-price small{font-size:.78rem;color:var(--ink-3);font-weight:400}
+.plan .p-desc{font-size:.82rem;color:var(--ink-3);margin-top:2px}
+.plan ul{list-style:none;margin:18px 0 22px;display:flex;flex-direction:column;gap:9px;flex:1}
+.plan li{display:flex;gap:9px;align-items:flex-start;font-size:.88rem;color:var(--ink-2)}
+.plan li::before{content:"▸";font-family:var(--font-mono);color:var(--brand);line-height:1.6}
+.plan .btn-solid,.plan .btn-ghost{width:100%}
 
-/* ============ 訊號表 ============ */
-.signal-card{margin-top:0}
-.table-scroll{overflow-x:auto;max-height:420px;overflow-y:auto}
-table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560px}
-.signals th{
-  font-family:var(--font-mono);font-size:.66rem;letter-spacing:.14em;color:var(--ink-3);text-align:left;
-  padding:9px 16px;border-bottom:1px solid var(--border-strong);font-weight:500;
-  position:sticky;top:0;background:var(--panel-solid);z-index:2;
+/* ============ FAQ ============ */
+.faq{max-width:760px}
+.faq details{border:1px solid var(--border-strong);border-radius:var(--radius);background:var(--panel);margin-bottom:10px}
+.faq summary{
+  list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding:14px 18px;font-weight:700;font-size:.95rem;
 }
-.signals td{height:36px;padding:4px 16px;border-bottom:1px solid var(--border);color:var(--ink-2);white-space:nowrap}
-.signals td.mono{color:var(--ink)}
-.signals tr.sig-row{opacity:0;animation:rowin .3s forwards}
-@keyframes rowin{to{opacity:1}}
-.sig-chip{font-family:var(--font-mono);font-size:.72rem;font-weight:600;border-radius:var(--radius);padding:1px 8px;border:1px solid currentColor}
-.sig-chip.buy{color:var(--up)}
-.sig-chip.sell{color:var(--down)}
-.empty-state{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:.85rem}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"＋";font-family:var(--font-mono);color:var(--brand);flex:none}
+.faq details[open] summary::after{content:"－"}
+.faq .a{padding:0 18px 16px;font-size:.9rem;color:var(--ink-2)}
 
-/* ============ Toast ============ */
-#toast-root{position:fixed;top:64px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{
-  display:flex;gap:10px;align-items:flex-start;min-width:250px;max-width:330px;
-  background:var(--panel-solid);border:1px solid var(--border-strong);
-  border-radius:var(--radius);padding:10px 14px;font-size:.82rem;color:var(--ink-2);
-  box-shadow:0 10px 28px -10px rgba(0,0,0,.6);animation:toastin .25s ease-out;
+/* ============ 尾段 CTA 與頁尾 ============ */
+.final-cta{
+  background:var(--panel);border:1px solid var(--brand);border-radius:var(--radius);
+  padding:var(--space-6) var(--space-5);display:flex;align-items:center;gap:20px;flex-wrap:wrap;
 }
-.toast::before{content:"▸";font-family:var(--font-mono);color:var(--brand);line-height:1.6}
-.toast.buy::before{content:"▲";color:var(--up)}
-.toast.sell::before{content:"▼";color:var(--down)}
-.toast b{color:var(--ink)}
-.toast.hide{animation:toastout .22s ease-in forwards}
-@keyframes toastin{from{opacity:0;transform:translateX(20px)}}
-@keyframes toastout{to{opacity:0;transform:translateX(20px)}}
-
-/* ============ 結帳 Modal ============ */
-.modal-backdrop{
-  position:fixed;inset:0;z-index:450;display:grid;place-items:center;padding:18px;
-  background:rgba(4,8,14,.66);backdrop-filter:blur(6px);
-  opacity:0;pointer-events:none;transition:opacity .25s;
-}
-.modal-backdrop.show{opacity:1;pointer-events:auto}
-.modal{
-  width:min(440px,100%);max-height:92vh;overflow-y:auto;
-  background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:var(--radius);
-  box-shadow:0 30px 80px -20px rgba(0,0,0,.7);
-  transform:translateY(12px);transition:transform .25s ease-out;
-}
-.modal-backdrop.show .modal{transform:none}
-.m-step{padding:24px 26px 26px}
-.m-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px}
-.m-eyebrow{font-family:var(--font-mono);font-size:.66rem;letter-spacing:.22em;color:var(--brand)}
-.m-head h2{font-size:1.25rem;font-weight:700;margin-top:2px}
-.m-close{background:none;border:none;color:var(--ink-3);font-size:1.5rem;line-height:1;padding:4px;transition:color .15s}
-.m-close:hover{color:var(--ink)}
-.m-plan{
-  display:flex;justify-content:space-between;align-items:center;font-size:.84rem;color:var(--ink-2);
-  border:1px solid var(--brand);border-radius:var(--radius);padding:11px 14px;margin-bottom:16px;
-}
-.m-plan b{font-family:var(--font-mono);font-size:1.05rem;color:var(--ink);white-space:nowrap;margin-left:10px}
-.m-plan small{font-size:.7rem;color:var(--ink-3);font-weight:400}
-#checkout-form label{display:block;font-size:.78rem;color:var(--ink-2);margin-bottom:8px}
-#checkout-form input{
-  display:block;width:100%;height:44px;margin-top:4px;padding:0 13px;font-size:.95rem;color:var(--ink);
-  font-family:var(--font-mono);background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius);
-  outline:2px solid transparent;outline-offset:1px;transition:border-color .15s,outline-color .15s;
-}
-#checkout-form input::placeholder{color:var(--ink-3);opacity:.55}
-#checkout-form input:focus{outline:2px solid var(--brand)}
-#checkout-form label.invalid input{border-color:var(--up);outline-color:transparent;animation:shake .3s}
-#checkout-form .err{display:block;min-height:1.2em;font-size:.72rem;color:var(--up);margin-top:3px;visibility:hidden}
-#checkout-form label.invalid .err{visibility:visible}
-@keyframes shake{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.m-divider{
-  display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-size:.68rem;
-  letter-spacing:.16em;color:var(--ink-3);margin:16px 0 12px;
-}
-.m-divider::before,.m-divider::after{content:"";flex:1;height:1px;background:var(--border)}
-.m-pay{margin-top:6px}
-.m-secure{text-align:center;font-size:.72rem;color:var(--ink-3);margin-top:12px}
-/* processing */
-.m-processing{text-align:center;padding:46px 26px 50px}
-.m-processing .big-spin{
-  width:52px;height:52px;margin:0 auto 18px;border-radius:50%;
-  border:3px solid color-mix(in srgb,var(--brand) 20%,transparent);border-top-color:var(--brand);
-  animation:spin .8s linear infinite;
-}
-.m-processing h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
-.m-processing p{font-size:.8rem;color:var(--ink-3);font-family:var(--font-mono)}
-/* success */
-.m-success{text-align:center;padding:40px 26px 34px}
-.m-success .check{width:74px;height:74px;margin:0 auto 16px}
-.m-success .check circle{stroke:var(--brand);stroke-width:2.4;fill:none;stroke-dasharray:214;stroke-dashoffset:214;animation:draw .7s .1s forwards}
-.m-success .check path{stroke:var(--brand);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:60;stroke-dashoffset:60;animation:draw .45s .65s forwards}
-@keyframes draw{to{stroke-dashoffset:0}}
-.m-success h3{font-size:1.3rem;font-weight:700}
-.m-success .inv{
-  margin:16px auto 6px;max-width:300px;text-align:left;font-size:.8rem;color:var(--ink-2);
-  border:1px dashed var(--border-strong);border-radius:var(--radius);padding:13px 16px;line-height:2;
-}
-.m-success .inv b{font-family:var(--font-mono);color:var(--ink);float:right}
-.m-success .sub-note{font-size:.72rem;color:var(--ink-3);margin-top:10px}
-.m-done{margin-top:18px;width:100%}
-
-/* ============ 頁尾 ============ */
-footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);padding:22px 0 36px}
-.disclaimer{font-size:.78rem;color:var(--ink-3);line-height:1.8;max-width:760px}
+.final-cta h2{font-family:var(--font-display);font-weight:900;font-size:1.5rem;flex:1;min-width:260px}
+footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);padding:26px 0 40px}
+.foot-grid{display:flex;gap:32px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}
+.foot-brand{font-family:var(--font-mono);font-weight:600;letter-spacing:.1em}
+.foot-links{display:flex;gap:18px;font-size:.84rem}
+.foot-links a{color:var(--ink-2)}
+.foot-links a:hover{color:var(--brand)}
+.disclaimer{font-size:.78rem;color:var(--ink-3);line-height:1.8;max-width:760px;margin-top:18px}
 .disclaimer b{color:var(--amber)}
 .foot-meta{margin-top:10px;font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.06em}
 
-/* ============ RWD（Task 5 細調） ============ */
+/* ============ RWD ============ */
 @media (max-width:1024px){
-  .grid-main{grid-template-columns:1fr;grid-template-rows:none}
-  .grid-main aside,.grid-main .chart-card,.grid-main .signal-card{grid-column:1;grid-row:auto}
-  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .stats .stat:nth-child(4){border-left:none}
-  .stats .stat:nth-child(n+4){border-top:1px solid var(--border)}
+  .hero-grid{grid-template-columns:1fr;gap:var(--space-6)}
+  .features{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pricing{grid-template-columns:1fr;max-width:480px}
+  .perf-band{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .perf-cell:nth-child(odd){border-left:none}
+  .perf-cell:nth-child(n+3){border-top:1px solid var(--border)}
 }
-@media (max-width:900px){
-  .market-badge{display:none}
-  .nav-inner{gap:12px}
+@media (max-width:720px){
+  .nav-links{display:none}
   .brand small{display:none}
-}
-@media (max-width:640px){
-  .market-badge{display:none}
-  .nav-inner{gap:10px}
-  .brand{font-size:.84rem}
-  .brand small{display:none}
-  .btn-pro{padding:7px 12px;font-size:.76rem}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .stats .stat:first-child{grid-column:1/-1}
-  .stats .stat:nth-child(even){border-left:none}
-  .stats .stat:nth-child(n+2){border-top:1px solid var(--border)}
-  .stats .stat:nth-child(odd):not(:first-child){border-left:1px solid var(--border)}
-  #chart-main{height:340px}
-  .hero{padding-top:24px}
-  .row2{grid-template-columns:1fr}
+  .hero{padding:44px 0 64px}
+  .features{grid-template-columns:1fr}
+  section.block{padding:var(--space-7) 0}
 }
 </style>
 </head>
 <body>
 
-<!-- 導覽 -->
 <nav class="nav">
   <div class="wrap nav-inner">
     <span class="brand">
       <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" fill="none" stroke="var(--brand)" stroke-width="2"/><path d="M6 20 L12 14 L16 17 L26 8" stroke="var(--brand)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="8" r="2.6" fill="var(--brand)"/></svg>
       QUANTPULSE <small>量化脈動</small>
     </span>
+    <div class="nav-links">
+      <a href="#features">功能</a><a href="#performance">回測績效</a><a href="#pricing">方案</a><a href="#faq">常見問題</a>
+    </div>
     <span class="nav-spacer"></span>
-    <span class="market-badge"><span class="dot"></span>模擬數據 · 就緒</span>
     <button class="icon-btn" id="btn-theme" title="切換深淺色主題" aria-label="切換深淺色主題">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
     </button>
-    <button class="btn-pro" id="btn-upgrade">升級 Pro</button>
+    <a class="btn-solid" href="app.html">開啟 DEMO</a>
   </div>
 </nav>
 
-<!-- TradingView 跑馬燈（第三方元件，載入失敗自動隱藏） -->
-<div class="ticker-shell" id="ticker-shell">
-  <div class="tradingview-widget-container">
-    <div class="tradingview-widget-container__widget"></div>
-  </div>
-</div>
-
-<main class="wrap" id="dashboard">
+<main>
+  <!-- Hero -->
   <header class="hero">
-    <h1>AI 量化策略儀表板</h1>
-    <p class="sub">
-      策略回測與買賣訊號引擎 · 標的：台積電 2330
-      <span class="sim-badge">模擬數據</span>
-    </p>
+    <div class="wrap hero-grid">
+      <div class="reveal in">
+        <span class="sim-badge">技術展示 · 模擬數據</span>
+        <h1>AI 量化訊號引擎，<br>把交易紀律變成<em>系統</em></h1>
+        <p class="lede">QuantPulse 將多策略回測、AI 買賣訊號與 TradingView 即時行情整合進單一儀表板，並內建訂閱金流與電子發票流程——從決策到收款，一條龍展示。</p>
+        <div class="hero-cta">
+          <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ]</a>
+          <a class="btn-ghost" href="#pricing">查看方案</a>
+        </div>
+      </div>
+      <div class="hero-card reveal in" style="transition-delay:.12s">
+        <div class="hc-head">
+          <span class="hc-title">台積電 2330（模擬）</span>
+          <span class="nav-spacer"></span>
+          <span class="hc-note">240 交易日回測</span>
+        </div>
+        <svg class="spark" id="hero-spark" viewBox="0 0 640 220" role="img" aria-label="台積電 2330 模擬收盤價走勢"></svg>
+        <div class="hc-stats">
+          <div class="hc-stat"><div class="l">累積報酬</div><div class="v pos" data-perf="totalReturn">--</div></div>
+          <div class="hc-stat"><div class="l">勝率</div><div class="v" data-perf="winRate">--</div></div>
+          <div class="hc-stat"><div class="l">夏普值</div><div class="v" data-perf="sharpe">--</div></div>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <!-- 統計卡列 -->
-  <section class="stats" aria-label="關鍵指標">
-    <div class="stat">
-      <div class="label">收盤價（模擬）</div>
-      <div class="value" id="stat-price">--</div>
-      <div class="delta" id="stat-price-delta">--</div>
-    </div>
-    <div class="stat pending">
-      <div class="label">策略勝率</div>
-      <div class="value" data-stat="winRate">--<span class="unit">%</span></div>
-      <div class="delta">執行 AI 分析後更新</div>
-    </div>
-    <div class="stat pending">
-      <div class="label">累積報酬</div>
-      <div class="value" data-stat="totalReturn">--<span class="unit">%</span></div>
-      <div class="delta">執行 AI 分析後更新</div>
-    </div>
-    <div class="stat pending">
-      <div class="label">最大回撤</div>
-      <div class="value" data-stat="maxDrawdown">--<span class="unit">%</span></div>
-      <div class="delta">執行 AI 分析後更新</div>
-    </div>
-    <div class="stat pending">
-      <div class="label">夏普值</div>
-      <div class="value" data-stat="sharpe">--</div>
-      <div class="delta">執行 AI 分析後更新</div>
+  <div class="wrap"><hr class="rule"></div>
+
+  <!-- 回測績效 -->
+  <section class="block" id="performance">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>回測績效，算給你看</h2>
+        <p>以下數字由頁面即時執行「AI 綜合 Alpha」策略對 240 個交易日模擬行情回測而得——與 DEMO 中你按下分析按鈕看到的結果完全一致，非行銷話術。</p>
+      </div>
+      <div class="perf-band reveal">
+        <div class="perf-cell"><div class="l">累積報酬</div><div class="v pos" data-perf="totalReturnPct">--</div></div>
+        <div class="perf-cell"><div class="l">策略勝率</div><div class="v" data-perf="winRatePct">--</div></div>
+        <div class="perf-cell"><div class="l">最大回撤</div><div class="v" data-perf="maxDrawdownPct">--</div></div>
+        <div class="perf-cell"><div class="l">夏普值</div><div class="v" data-perf="sharpe2">--</div></div>
+      </div>
+      <p class="perf-note reveal">模擬回測聲明：行情由固定種子演算法產生（seed 69），不代表任何真實市場或未來績效。</p>
     </div>
   </section>
 
-  <!-- 主圖表＋策略面板 -->
-  <section class="grid-main" id="engine">
-    <div class="card chart-card">
-      <div class="card-head">
-        <select class="symbol-select" id="symbol-select" aria-label="切換標的">
-          <option value="2330">台積電 2330（模擬）</option>
-          <option value="taiex">加權指數 TAIEX（模擬）</option>
-        </select>
-        <span class="card-note">240 交易日 · 日 K</span>
-        <span class="nav-spacer"></span>
-        <div class="chart-tabs" role="tablist" aria-label="圖表切換">
-          <button class="chart-tab selected" data-tab="sim" role="tab" aria-selected="true">模擬回測</button>
-          <button class="chart-tab" data-tab="tv" role="tab" aria-selected="false">TradingView 即時</button>
+  <!-- 功能 -->
+  <section class="block" id="features" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>一個儀表板，四件事做完</h2>
+        <p>每一項功能都能在 DEMO 裡實際操作——不是概念圖，是能點的產品。</p>
+      </div>
+      <div class="features">
+        <div class="feature reveal">
+          <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
+          <h3>AI 訊號引擎</h3>
+          <p>均線交叉、動能突破、AI 綜合 Alpha 三種策略即時掃描，買賣訊號直接疊加在 K 線上，附判斷依據與績效統計。</p>
+          <span class="f-tag">DEMO 可操作</span>
+        </div>
+        <div class="feature reveal" style="transition-delay:.08s">
+          <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-8 6 2 9-6s5-2 9-8"/></svg></div>
+          <h3>多標的回測</h3>
+          <p>台積電 2330 與加權指數 TAIEX 一鍵切換，240 個交易日回測含勝率、累積報酬、最大回撤與夏普值，訊號紀錄可匯出 CSV。</p>
+          <span class="f-tag">DEMO 可操作</span>
+        </div>
+        <div class="feature reveal" style="transition-delay:.16s">
+          <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 14l3-4 2 2 4-5"/></svg></div>
+          <h3>TradingView 即時整合</h3>
+          <p>Advanced Chart 完整互動圖表（RSI＋MACD）、技術面買賣儀表盤與行情跑馬燈——真實市場數據與模擬訊號並列對照。</p>
+          <span class="f-tag">真實行情</span>
+        </div>
+        <div class="feature reveal" style="transition-delay:.24s">
+          <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="1"/><path d="M2 10h20M6 15h4"/></svg></div>
+          <h3>訂閱金流與電子發票</h3>
+          <p>完整模擬結帳流程：卡號防呆與 Luhn 校驗、統編與手機條碼載具、付款進度與電子發票開立回饋——展示金流串接的前端全貌。</p>
+          <span class="f-tag">模擬流程</span>
         </div>
       </div>
-      <div id="chart-main" role="img" aria-label="台積電 2330 模擬日 K 線圖，含 MA5、MA20、MA60 均線與成交量"></div>
-      <div id="tv-chart" hidden aria-label="TradingView 即時圖表（台積電 ADR）"></div>
-      <div class="scan-overlay" id="scan-overlay">
-        <div class="beam"></div>
-        <span class="scan-tag">AI 掃描中…</span>
+    </div>
+  </section>
+
+  <!-- 產品展示 -->
+  <section class="block" style="padding-top:0">
+    <div class="wrap">
+      <div class="showcase reveal">
+        <figure>
+          <img src="og.png" alt="QuantPulse 儀表板畫面：K 線圖、AI 買賣訊號、策略引擎與績效統計" loading="lazy" width="1200" height="630">
+        </figure>
+        <div class="sc-foot">
+          <p>這不是設計稿——是可以直接操作的產品原型。點開 DEMO，執行 AI 分析、切換標的、走一次訂閱流程。</p>
+          <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ]</a>
+        </div>
       </div>
     </div>
+  </section>
 
-    <aside class="card">
-      <div class="panel-title">策略引擎</div>
-      <div class="strategies" id="strategy-select" role="radiogroup" aria-label="策略選擇">
-        <button class="strategy selected" data-strategy="ma-cross" role="radio" aria-checked="true">
-          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-8 6 2 9-6s5-2 9-8"/></svg></span>
-          <span><span class="s-name">均線交叉</span><br><span class="s-desc">MA5 與 MA20 黃金／死亡交叉進出場</span></span>
-          <span class="s-check">✓ 已選</span>
-        </button>
-        <button class="strategy" data-strategy="momentum" role="radio" aria-checked="false">
-          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20 L12 4 M12 4 l-4 2 M12 4 l2 4"/><path d="M14 20 l6-9"/></svg></span>
-          <span><span class="s-name">動能突破</span><br><span class="s-desc">突破 20 日高點買進、跌破 20 日低點出場</span></span>
-          <span class="s-check">✓ 已選</span>
-        </button>
-        <button class="strategy" data-strategy="ai" role="radio" aria-checked="false">
-          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>
-          <span><span class="s-name">AI 綜合 Alpha</span><br><span class="s-desc">多因子訊號聯集，均線＋動能交叉驗證</span></span>
-          <span class="s-check">✓ 已選</span>
-        </button>
-        <button class="strategy locked" data-strategy="pro" aria-disabled="true">
-          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-          <span><span class="s-name">深度學習 Alpha</span><br><span class="s-desc">LSTM 多市場因子模型，Pro 訂閱限定</span></span>
-          <span class="s-lock">PRO<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-        </button>
+  <!-- 定價 -->
+  <section class="block" id="pricing" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>方案定價</h2>
+        <p>訂閱為模擬流程，點「立即訂閱」體驗完整結帳（卡號防呆、統編／載具、電子發票），不會產生任何實際費用。</p>
       </div>
-      <div class="panel-cta">
-        <button class="btn-scan" id="btn-ai-scan"><span class="spinner"></span>[ <span class="btn-label">啟動 AI 策略分析</span> ]</button>
+      <div class="pricing">
+        <div class="plan reveal">
+          <h3>Explorer</h3>
+          <div class="p-price">NT$ 0</div>
+          <p class="p-desc">先體驗，不用卡號</p>
+          <ul>
+            <li>模擬行情 K 線與均線圖表</li>
+            <li>均線交叉／動能突破策略</li>
+            <li>TradingView 即時技術面</li>
+          </ul>
+          <a class="btn-ghost" href="app.html">開啟 DEMO</a>
+        </div>
+        <div class="plan hot reveal" style="transition-delay:.08s">
+          <span class="p-flag">最受歡迎</span>
+          <h3>Pro</h3>
+          <div class="p-price">NT$ 1,290<small> /月</small></div>
+          <p class="p-desc">完整 AI 策略火力</p>
+          <ul>
+            <li>全部 AI 策略（含深度學習 Alpha）</li>
+            <li>2330／TAIEX 雙標的回測</li>
+            <li>訊號紀錄 CSV 匯出</li>
+            <li>電子發票自動開立（統編／載具）</li>
+          </ul>
+          <button class="btn-solid" data-open-checkout data-plan-name="Pro 月訂閱" data-plan-desc="解鎖全部 AI 策略與即時訊號" data-plan-price="NT$ 1,290" data-plan-period="/月">[ 立即訂閱 ]</button>
+        </div>
+        <div class="plan reveal" style="transition-delay:.16s">
+          <h3>Enterprise</h3>
+          <div class="p-price">客製報價</div>
+          <p class="p-desc">白牌與整合需求</p>
+          <ul>
+            <li>白牌授權與品牌客製</li>
+            <li>API 串接與資料源整合</li>
+            <li>專屬部署與技術支援</li>
+          </ul>
+          <a class="btn-ghost" href="#faq">瞭解合作</a>
+        </div>
       </div>
-      <div class="panel-perf" id="panel-perf">
-        <div class="perf-row"><span>交易筆數</span><b id="perf-trades">--</b></div>
-        <div class="perf-row"><span>最新訊號</span><b id="perf-latest">--</b></div>
-      </div>
-      <div class="upgrade-hint">
-        <button class="btn-upgrade-link" id="btn-upgrade-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>升級 Pro 解鎖全部 AI 策略</button>
-      </div>
-      <div id="tv-ta-section">
-        <div class="panel-title" style="border-top:1px solid var(--border)">即時技術面（TradingView）</div>
-        <div id="tv-ta" aria-label="TradingView 台積電 ADR 即時技術面分析儀表"></div>
-        <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
-      </div>
-    </aside>
+    </div>
+  </section>
 
-    <!-- 訊號紀錄：置於左欄第二列，與側欄並排填滿版面 -->
-    <section class="card signal-card" id="signals">
-      <div class="card-head">
-        <span class="card-title">AI 訊號紀錄</span>
-        <span class="card-note" id="signal-count"></span>
+  <!-- FAQ -->
+  <section class="block" id="faq" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head reveal">
+        <h2>常見問題</h2>
       </div>
-      <div class="table-scroll">
-        <table class="signals">
-          <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
-          <tbody id="signal-table-body"></tbody>
-        </table>
+      <div class="faq reveal">
+        <details open>
+          <summary>「立即訂閱」會真的扣款嗎？</summary>
+          <p class="a">不會。整個結帳流程（含卡號驗證、統編、電子發票）皆為前端模擬，沒有任何後端金流串接，也不會發送或儲存你的輸入資料。可放心用測試卡號 4242 4242 4242 4242 體驗。</p>
+        </details>
+        <details>
+          <summary>圖表數據是真實行情嗎？</summary>
+          <p class="a">K 線與回測數據由固定種子演算法產生，屬於模擬行情；TradingView 分頁、技術面儀表盤與跑馬燈則是真實市場數據（第三方元件）。頁面上皆有明確標示。</p>
+        </details>
+        <details>
+          <summary>Pro 策略要怎麼解鎖？</summary>
+          <p class="a">在任一頁點「立即訂閱」或「升級 Pro」，完成模擬結帳後，儀表板的「深度學習 Alpha」策略卡即會解鎖，可立刻執行分析。</p>
+        </details>
+        <details>
+          <summary>這個網站的技術架構是什麼？</summary>
+          <p class="a">純 Vanilla HTML/CSS/JS，零框架零建置：ECharts 5 自繪 K 線、共用結帳模組、Node 單元測試、Playwright 多視口互動驗證，部署於 GitHub Pages。以 AI 協作工作流開發，完整歷程見版本紀錄。</p>
+        </details>
       </div>
-      <div class="empty-state" id="signal-empty">
-        尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
+    </div>
+  </section>
+
+  <!-- 尾段 CTA -->
+  <section class="block" style="padding-top:0">
+    <div class="wrap">
+      <div class="final-cta reveal">
+        <h2>親手跑一次 AI 策略回測</h2>
+        <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ]</a>
+        <a class="btn-ghost" href="#pricing">查看方案</a>
       </div>
-    </section>
+    </div>
   </section>
 </main>
 
-<!-- Pro 訂閱模擬結帳 -->
-<div class="modal-backdrop" id="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
-  <div class="modal">
-    <section class="m-step" data-step="form">
-      <header class="m-head">
-        <div>
-          <span class="m-eyebrow">QUANTPULSE PRO</span>
-          <h2 id="checkout-title">升級 Pro 訂閱</h2>
-        </div>
-        <button class="m-close" id="checkout-close" aria-label="關閉結帳視窗">×</button>
-      </header>
-      <div class="m-plan">
-        <span>Pro 月訂閱<br>解鎖全部 AI 策略與即時訊號</span>
-        <b>NT$ 1,290<small> /月</small></b>
-      </div>
-      <form id="checkout-form" novalidate>
-        <label>持卡人姓名
-          <input id="cc-name" autocomplete="cc-name" placeholder="王小明">
-          <span class="err"></span>
-        </label>
-        <label>信用卡卡號
-          <input id="cc-number" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242">
-          <span class="err"></span>
-        </label>
-        <div class="row2">
-          <label>有效期限
-            <input id="cc-exp" inputmode="numeric" placeholder="MM/YY" maxlength="5">
-            <span class="err"></span>
-          </label>
-          <label>安全碼
-            <input id="cc-cvc" inputmode="numeric" placeholder="123" maxlength="3">
-            <span class="err"></span>
-          </label>
-        </div>
-        <div class="m-divider">電子發票（模擬開立）</div>
-        <label>統一編號（選填，公司戶報帳）
-          <input id="inv-gui" inputmode="numeric" placeholder="12345678" maxlength="8">
-          <span class="err"></span>
-        </label>
-        <label>手機條碼載具（選填）
-          <input id="inv-carrier" placeholder="/ABC1234" maxlength="8">
-          <span class="err"></span>
-        </label>
-        <button type="submit" class="btn-scan m-pay">[ <span class="btn-label">確認付款 NT$ 1,290</span> ]</button>
-        <p class="m-secure"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> 此為模擬結帳視窗，不會進行任何實際請款</p>
-      </form>
-    </section>
-
-    <section class="m-step m-processing" data-step="processing" hidden>
-      <div class="big-spin"></div>
-      <h3>正在處理付款…</h3>
-      <p>SIMULATING BANK 3-D SECURE…</p>
-    </section>
-
-    <section class="m-step m-success" data-step="success" hidden>
-      <svg class="check" viewBox="0 0 74 74">
-        <circle cx="37" cy="37" r="34"/>
-        <path d="M23 38.5 L33 48 L52 28"/>
-      </svg>
-      <h3>付款成功！</h3>
-      <p style="color:var(--ink-2);font-size:.9rem;margin-top:4px">已自動開立電子發票（模擬）</p>
-      <div class="inv">
-        <div>發票號碼 <b id="inv-number">--</b></div>
-        <div>開立方式 <b id="inv-method">--</b></div>
-        <div>金額 <b>NT$ 1,290</b></div>
-      </div>
-      <p class="sub-note">「深度學習 Alpha」策略已解鎖，本視窗為前端展示、未進行實際交易</p>
-      <button class="btn-scan m-done" id="checkout-done">[ <span class="btn-label">開始使用 Pro</span> ]</button>
-    </section>
-  </div>
-</div>
-
-<div id="toast-root" aria-live="polite"></div>
-
 <footer>
   <div class="wrap">
+    <div class="foot-grid">
+      <span class="foot-brand">QUANTPULSE 量化脈動</span>
+      <div class="foot-links">
+        <a href="app.html">產品 DEMO</a>
+        <a href="#features">功能</a>
+        <a href="#pricing">方案</a>
+        <a href="#faq">常見問題</a>
+      </div>
+    </div>
     <p class="disclaimer">
-      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（2330：seed 69／TAIEX：seed 99）演算法產生之<b>模擬數據</b>；
-      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部跑馬燈、「TradingView 即時」圖表分頁與側欄技術面儀表為
-      TradingView 第三方元件（<b>真實市場數據</b>，非模擬）。本頁所有內容不構成投資建議。
+      <b>模擬展示聲明：</b>本網站為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子演算法產生之<b>模擬數據</b>；
+      「訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。TradingView 相關元件為第三方即時數據。本站所有內容不構成投資建議。
     </p>
     <p class="foot-meta">QUANTPULSE DEMO · BUILT WITH AI-ASSISTED WORKFLOW · ECHARTS 5 / VANILLA JS · 2026</p>
   </div>
 </footer>
 
 <script src="logic.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
-/* ============ 資料初始化（可切換標的） ============ */
-const DAYS = 240;
-const SYMBOLS = {
-  '2330': { label: '台積電 2330（模擬）', seed: 69, start: 780 },
-  'taiex': { label: '加權指數 TAIEX（模擬）', seed: 99, start: 20000 },
-};
-let candles = QP.generateCandles(SYMBOLS['2330'].seed, DAYS, SYMBOLS['2330'].start);
-const fmt = (n) => n.toLocaleString('zh-Hant-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-/* 收盤價統計卡 */
-function updatePriceStat() {
-  const last = candles[candles.length - 1], prev = candles[candles.length - 2];
-  const chg = last.close - prev.close, pct = (chg / prev.close) * 100;
-  document.getElementById('stat-price').textContent = fmt(last.close);
-  const d = document.getElementById('stat-price-delta');
-  d.textContent = `${chg >= 0 ? '▲' : '▼'} ${fmt(Math.abs(chg))}（${chg >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(2)}%）`;
-  d.classList.remove('up', 'down');
-  d.classList.add(chg >= 0 ? 'up' : 'down');
-}
-updatePriceStat();
-
-/* ============ 主題 ============ */
+document.documentElement.classList.add('js'); // 漸進增強：無 JS 時 reveal 元素維持可見
+/* ============ 主題（與 app.html 共用 localStorage 鍵） ============ */
 const root = document.documentElement;
-function themeTokens() {
-  const s = getComputedStyle(root);
-  const v = (name) => s.getPropertyValue(name).trim();
-  return {
-    up: v('--up'), down: v('--down'), ma5: v('--ma5'), ma20: v('--ma20'), ma60: v('--ma60'),
-    ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'),
-    border: v('--border'), panel: v('--panel-solid'), brand: v('--brand'),
-  };
-}
-
-/* ============ K 線主圖 ============ */
-let chart = null;
-function baseOption() {
-  const t = themeTokens();
-  const dates = candles.map((c) => c.date);
-  const ohlc = candles.map((c) => [c.open, c.close, c.low, c.high]);
-  const volume = candles.map((c, i) => ({
-    value: c.volume,
-    itemStyle: { color: c.close >= c.open ? t.up : t.down, opacity: 0.5 },
-  }));
-  const maSeries = [
-    { name: 'MA5', period: 5, color: t.ma5, type: 'solid' },
-    { name: 'MA20', period: 20, color: t.ma20, type: [6, 3] },
-    { name: 'MA60', period: 60, color: t.ma60, type: [2, 3] },
-  ].map((m) => ({
-    name: m.name, type: 'line', data: QP.calcMA(candles, m.period),
-    symbol: 'none', smooth: true, z: 3,
-    lineStyle: { width: 2, color: m.color, type: m.type },
-    itemStyle: { color: m.color },
-    emphasis: { disabled: true },
-  }));
-  return {
-    animation: true,
-    backgroundColor: 'transparent',
-    legend: {
-      data: ['MA5', 'MA20', 'MA60'], top: 8, right: 16, icon: 'roundRect',
-      itemWidth: 14, itemHeight: 3, textStyle: { color: t.ink2, fontSize: 11, fontFamily: 'IBM Plex Mono' },
-    },
-    axisPointer: { link: [{ xAxisIndex: 'all' }], label: { backgroundColor: t.panel, color: t.ink, borderColor: t.border, borderWidth: 1 } },
-    tooltip: {
-      trigger: 'axis', axisPointer: { type: 'cross' },
-      backgroundColor: t.panel, borderColor: t.border, textStyle: { color: t.ink, fontSize: 12 },
-      extraCssText: 'box-shadow:0 12px 32px -8px rgba(0,0,0,.5);border-radius:10px;font-family:IBM Plex Mono;',
-      formatter(params) {
-        const k = params.find((p) => p.seriesType === 'candlestick');
-        if (!k) return '';
-        const c = candles[k.dataIndex];
-        const prev = candles[k.dataIndex - 1] || c;
-        const pct = ((c.close - prev.close) / prev.close) * 100;
-        const cl = c.close >= c.open ? t.up : t.down;
-        const mas = params.filter((p) => p.seriesType === 'line' && p.value != null)
-          .map((p) => `<div>${p.marker}${p.seriesName}　<b>${fmt(p.value)}</b></div>`).join('');
-        return `<div style="line-height:1.9;min-width:170px">
-          <div style="opacity:.7">${c.date}</div>
-          <div>開盤　<b>${fmt(c.open)}</b>　收盤　<b style="color:${cl}">${fmt(c.close)}</b></div>
-          <div>最高　<b>${fmt(c.high)}</b>　最低　<b>${fmt(c.low)}</b></div>
-          <div>漲跌　<b style="color:${cl}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</b>　量　<b>${c.volume.toLocaleString()}</b></div>
-          ${mas}</div>`;
-      },
-    },
-    grid: [
-      { left: 14, right: 58, top: 38, height: '58%' },
-      { left: 14, right: 58, top: '76%', height: '15%' },
-    ],
-    xAxis: [
-      {
-        type: 'category', data: dates, boundaryGap: true,
-        axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false },
-        axisLabel: { color: t.ink3, fontSize: 10, fontFamily: 'IBM Plex Mono', formatter: (v) => v.slice(5) },
-        splitLine: { show: false },
-      },
-      {
-        type: 'category', gridIndex: 1, data: dates, boundaryGap: true,
-        axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false }, axisLabel: { show: false },
-        splitLine: { show: false },
-      },
-    ],
-    yAxis: [
-      {
-        scale: true, position: 'right',
-        axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: t.ink3, fontSize: 10, fontFamily: 'IBM Plex Mono' },
-        splitLine: { lineStyle: { color: t.border, type: [2, 4] } },
-      },
-      {
-        scale: true, gridIndex: 1, position: 'right', splitNumber: 2,
-        axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v / 1000).toFixed(0) + 'K' },
-        splitLine: { show: false },
-      },
-    ],
-    dataZoom: [
-      { type: 'inside', xAxisIndex: [0, 1], start: 25, end: 100 },
-    ],
-    series: [
-      {
-        name: '日K', type: 'candlestick', data: ohlc, z: 2,
-        itemStyle: { color: t.up, color0: t.down, borderColor: t.up, borderColor0: t.down, borderWidth: 1.2 },
-        markPoint: { data: [] },
-      },
-      ...maSeries,
-      { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volume, barWidth: '62%' },
-    ],
-  };
-}
-function renderChart() {
-  const el = document.getElementById('chart-main');
-  if (typeof echarts === 'undefined') {
-    el.innerHTML = '<p style="padding:40px;text-align:center;color:var(--ink-3)">圖表資源載入失敗，請重新整理頁面</p>';
-    return;
-  }
-  if (!chart) chart = echarts.init(el);
-  chart.setOption(baseOption(), true);
-}
-renderChart();
-window.addEventListener('resize', () => chart && chart.resize());
-
-/* 主題切換：重繪圖表以套用新代幣 */
+try {
+  const saved = localStorage.getItem('qp-theme');
+  if (saved) root.dataset.theme = saved;
+} catch (e) { /* 無痕模式 */ }
 document.getElementById('btn-theme').addEventListener('click', () => {
   const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
   root.dataset.theme = next;
   try { localStorage.setItem('qp-theme', next); } catch (e) { /* 無痕模式 */ }
-  renderChart();
-  if (window.applySignalOverlay) window.applySignalOverlay();
-  buildTicker();
-  if (typeof buildTvTa === 'function') buildTvTa();
-  if (typeof tvChartInited !== 'undefined' && tvChartInited) buildTvChart();
-});
-try {
-  const saved = localStorage.getItem('qp-theme');
-  if (saved && saved !== root.dataset.theme) { root.dataset.theme = saved; renderChart(); }
-} catch (e) { /* 無痕模式 */ }
-
-/* ============ TradingView 跑馬燈（失敗自動隱藏；主題切換時重建） ============ */
-function buildTicker() {
-  const shell = document.getElementById('ticker-shell');
-  const holder = shell.querySelector('.tradingview-widget-container__widget');
-  holder.innerHTML = '';
-  shell.classList.remove('is-hidden');
-  const s = document.createElement('script');
-  s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
-  s.async = true;
-  s.innerHTML = JSON.stringify({
-    symbols: [
-      { proName: 'NYSE:TSM', title: '台積電 ADR' },
-      { proName: 'NASDAQ:NVDA', title: 'NVIDIA' },
-      { proName: 'NASDAQ:AAPL', title: 'Apple' },
-      { proName: 'FOREXCOM:SPXUSD', title: 'S&P 500' },
-      { proName: 'BITSTAMP:BTCUSD', title: 'BTC/USD' },
-    ],
-    showSymbolLogo: true, isTransparent: true, displayMode: 'adaptive',
-    colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark', locale: 'zh_TW',
-  });
-  s.onerror = () => shell.classList.add('is-hidden');
-  holder.appendChild(s);
-  setTimeout(() => { if (!shell.querySelector('iframe')) shell.classList.add('is-hidden'); }, 3500);
-}
-buildTicker();
-
-/* ============ TradingView 進階嵌入：Advanced Chart（懶載入）＋技術面儀表 ============ */
-const TV_SYMBOL = 'NYSE:TSM';
-let tvChartInited = false;
-
-function tvEmbed(container, widgetFile, config) {
-  container.innerHTML = '<div class="tradingview-widget-container" style="height:100%"><div class="tradingview-widget-container__widget" style="height:100%"></div></div>';
-  const s = document.createElement('script');
-  s.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widgetFile}.js`;
-  s.async = true;
-  s.innerHTML = JSON.stringify(config);
-  container.querySelector('.tradingview-widget-container__widget').appendChild(s);
-}
-
-function buildTvChart() {
-  tvEmbed(document.getElementById('tv-chart'), 'advanced-chart', {
-    autosize: true, symbol: TV_SYMBOL, interval: 'D', timezone: 'Asia/Taipei',
-    theme: root.dataset.theme === 'light' ? 'light' : 'dark', style: '1', locale: 'zh_TW',
-    studies: ['STD;RSI', 'STD;MACD'], allow_symbol_change: true, hide_volume: false,
-    support_host: 'https://www.tradingview.com',
-  });
-  tvChartInited = true;
-}
-
-function buildTvTa() {
-  const section = document.getElementById('tv-ta-section');
-  const el = document.getElementById('tv-ta');
-  section.classList.remove('loaded');
-  tvEmbed(el, 'technical-analysis', {
-    interval: '1D', symbol: TV_SYMBOL, width: '100%', height: 360,
-    colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark',
-    isTransparent: true, showIntervalTabs: false, disableInterval: false, locale: 'zh_TW',
-  });
-  let waited = 0;
-  const markLoaded = () => section.classList.add('loaded');
-  const poll = setInterval(() => {
-    waited += 400;
-    const iframe = el.querySelector('iframe');
-    if (iframe) {
-      clearInterval(poll);
-      // iframe 出現≠內容繪製完成：等 load 事件＋緩衝，並設保底
-      iframe.addEventListener('load', () => setTimeout(markLoaded, 400), { once: true });
-      setTimeout(markLoaded, 3500);
-    } else if (waited >= 4800) {
-      section.classList.add('is-hidden');
-      clearInterval(poll);
-    }
-  }, 400);
-}
-buildTvTa();
-
-/* 圖表分頁切換 */
-window.showChartTab = showChartTab;
-function showChartTab(name) {
-  document.querySelectorAll('.chart-tab').forEach((b) => {
-    const on = b.dataset.tab === name;
-    b.classList.toggle('selected', on);
-    b.setAttribute('aria-selected', String(on));
-  });
-  document.getElementById('chart-main').style.display = name === 'sim' ? '' : 'none';
-  document.getElementById('tv-chart').hidden = name !== 'tv';
-  if (name === 'tv' && !tvChartInited) buildTvChart();
-  if (name === 'sim' && chart) chart.resize();
-}
-document.querySelectorAll('.chart-tab').forEach((b) => {
-  b.addEventListener('click', () => showChartTab(b.dataset.tab));
+  drawSpark();
 });
 
-/* ============ Toast ============ */
-function showToast(html, type = 'info') {
-  const rootEl = document.getElementById('toast-root');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = html;
-  rootEl.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('hide');
-    setTimeout(() => el.remove(), 320);
-  }, 4200);
+/* ============ 真實計算的回測數字（與 DEMO 同源） ============ */
+const candles = QP.generateCandles(69, 240, 780);
+const perf = QP.calcPerformance(candles, QP.generateSignals(candles, 'ai'));
+const fill = (key, text) => document.querySelectorAll(`[data-perf="${key}"]`).forEach((el) => { el.textContent = text; });
+fill('totalReturn', `+${perf.totalReturn.toFixed(1)}%`);
+fill('winRate', `${perf.winRate.toFixed(0)}%`);
+fill('sharpe', perf.sharpe.toFixed(2));
+fill('totalReturnPct', `+${perf.totalReturn.toFixed(2)}%`);
+fill('winRatePct', `${perf.winRate.toFixed(1)}%`);
+fill('maxDrawdownPct', `${perf.maxDrawdown.toFixed(2)}%`);
+fill('sharpe2', perf.sharpe.toFixed(2));
+
+/* ============ Hero 走勢圖（SVG，由模擬收盤價繪製） ============ */
+function drawSpark() {
+  const svg = document.getElementById('hero-spark');
+  const closes = candles.map((c) => c.close);
+  const W = 640, H = 220, PAD = 14;
+  const min = Math.min(...closes), max = Math.max(...closes);
+  const x = (i) => PAD + (i / (closes.length - 1)) * (W - PAD * 2);
+  const y = (v) => H - PAD - ((v - min) / (max - min)) * (H - PAD * 2);
+  const pts = closes.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+  const brand = getComputedStyle(root).getPropertyValue('--brand').trim();
+  const border = getComputedStyle(root).getPropertyValue('--border').trim();
+  svg.innerHTML = `
+    <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="${border}" stroke-width="1"/>
+    <polyline points="${pts.join(' ')} ${W - PAD},${H - PAD} ${PAD},${H - PAD}" fill="${brand}" opacity=".08" stroke="none"/>
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${brand}" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="${x(closes.length - 1)}" cy="${y(closes[closes.length - 1])}" r="3.5" fill="${brand}"/>`;
 }
+drawSpark();
 
-/* ============ AI 策略分析：idle → scanning → results ============ */
-const STRATEGY_NAMES = { 'ma-cross': '均線交叉', momentum: '動能突破', ai: 'AI 綜合 Alpha' };
-const state = { strategy: 'ma-cross', signals: null, perf: null, scanning: false };
-
-/* 策略選擇 */
-document.querySelectorAll('#strategy-select .strategy').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('locked')) {
-      if (window.openCheckout) window.openCheckout();
-      else showToast('「深度學習 Alpha」需升級 <b>Pro</b> 後解鎖');
-      return;
-    }
-    document.querySelectorAll('#strategy-select .strategy:not(.locked)').forEach((b) => {
-      b.classList.toggle('selected', b === btn);
-      b.setAttribute('aria-checked', String(b === btn));
-    });
-    state.strategy = btn.dataset.strategy;
+/* ============ 滾動進場 ============ */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((e) => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
   });
-});
-
-/* 訊號疊加到 K 線（markPoint）；掛上 window 供主題切換後重新套用 */
-window.applySignalOverlay = applySignalOverlay;
-function applySignalOverlay() {
-  if (!chart || !state.signals) return;
-  const t = themeTokens();
-  const points = state.signals.map((s) => {
-    const buy = s.type === 'buy';
-    return {
-      coord: [s.index, buy ? candles[s.index].low * 0.985 : candles[s.index].high * 1.015],
-      symbol: 'arrow', symbolSize: 15, symbolRotate: buy ? 0 : 180,
-      itemStyle: { color: buy ? t.up : t.down, shadowBlur: 8, shadowColor: buy ? t.up : t.down },
-      label: {
-        show: true, formatter: buy ? '買' : '賣', position: buy ? 'bottom' : 'top',
-        color: buy ? t.up : t.down, fontSize: 11, fontWeight: 700, fontFamily: 'IBM Plex Mono',
-      },
-    };
-  });
-  chart.setOption({
-    dataZoom: [{ start: 0, end: 100 }],
-    series: [{ name: '日K', markPoint: { data: points, animation: true } }],
-  });
-}
-
-/* 數字滾動 */
-function countUp(el, target, decimals, unit) {
-  const dur = 850, t0 = performance.now();
-  const startText = parseFloat(el.textContent);
-  const from = Number.isFinite(startText) ? startText : 0;
-  function frame(now) {
-    const p = Math.min(1, (now - t0) / dur);
-    const eased = 1 - Math.pow(1 - p, 3);
-    const val = from + (target - from) * eased;
-    el.innerHTML = `${val.toFixed(decimals)}${unit ? `<span class="unit">${unit}</span>` : ''}`;
-    if (p < 1) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-
-function updateStats(perf) {
-  const map = [
-    ['winRate', perf.winRate, 1, '%'],
-    ['totalReturn', perf.totalReturn, 2, '%'],
-    ['maxDrawdown', perf.maxDrawdown, 2, '%'],
-    ['sharpe', perf.sharpe, 2, ''],
-  ];
-  for (const [key, val, dec, unit] of map) {
-    const el = document.querySelector(`[data-stat="${key}"]`);
-    const tile = el.closest('.stat');
-    tile.classList.remove('pending');
-    tile.querySelector('.delta').textContent = `${STRATEGY_NAMES[state.strategy]} · ${perf.trades} 筆交易`;
-    countUp(el, val, dec, unit);
-  }
-}
-
-/* 訊號表（最新在上，逐列進場） */
-function fillSignalTable(signals) {
-  const body = document.getElementById('signal-table-body');
-  body.innerHTML = '';
-  document.getElementById('signal-empty').style.display = 'none';
-  document.getElementById('signal-count').textContent =
-    `策略：${STRATEGY_NAMES[state.strategy]} · 共 ${signals.length} 筆`;
-  [...signals].reverse().forEach((s, i) => {
-    const tr = document.createElement('tr');
-    tr.className = 'sig-row';
-    tr.style.animationDelay = `${i * 55}ms`;
-    tr.innerHTML = `
-      <td class="mono">${candles[s.index].date}</td>
-      <td>${STRATEGY_NAMES[state.strategy]}</td>
-      <td><span class="sig-chip ${s.type}">${s.type === 'buy' ? '▲ 買進' : '▼ 賣出'}</span></td>
-      <td class="mono">${fmt(s.price)}</td>
-      <td>${s.reason}</td>`;
-    body.appendChild(tr);
-  });
-}
-
-function showPerfPanel(signals, perf) {
-  const panel = document.getElementById('panel-perf');
-  panel.classList.add('show');
-  document.getElementById('perf-trades').textContent = `${perf.trades} 筆（${signals.length} 個訊號）`;
-  const latest = signals[signals.length - 1];
-  document.getElementById('perf-latest').textContent =
-    `${candles[latest.index].date} ${latest.type === 'buy' ? '買進' : '賣出'}`;
-}
-
-/* 主流程 */
-function runAiScan() {
-  if (state.scanning) return;
-  state.scanning = true;
-  if (window.showChartTab) window.showChartTab('sim'); // 掃描結果畫在模擬圖上
-  const btn = document.getElementById('btn-ai-scan');
-  const overlay = document.getElementById('scan-overlay');
-  btn.disabled = true;
-  btn.classList.add('loading');
-  btn.querySelector('.btn-label').textContent = 'AI 掃描模擬行情中…';
-  overlay.classList.add('active');
-
-  setTimeout(() => {
-    const signals = QP.generateSignals(candles, state.strategy);
-    const perf = QP.calcPerformance(candles, signals);
-    Object.assign(state, { signals, perf, scanning: false });
-
-    applySignalOverlay();
-    updateStats(perf);
-    fillSignalTable(signals);
-    showPerfPanel(signals, perf);
-
-    const latest = signals[signals.length - 1];
-    showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：偵測到 ${signals.length} 個訊號`);
-    setTimeout(() => showToast(
-      `最新訊號 <b>${candles[latest.index].date}</b>：<b>${latest.type === 'buy' ? '▲ 買進' : '▼ 賣出'} ${fmt(latest.price)}</b><br>${latest.reason}`,
-      latest.type,
-    ), 450);
-
-    btn.disabled = false;
-    btn.classList.remove('loading');
-    btn.querySelector('.btn-label').textContent = '重新執行 AI 分析';
-    overlay.classList.remove('active');
-  }, 1500);
-}
-document.getElementById('btn-ai-scan').addEventListener('click', runAiScan);
-
-/* ============ 標的切換：重生數據、清空分析、重繪 ============ */
-function resetAnalysis() {
-  state.signals = null;
-  state.perf = null;
-  const units = { winRate: '%', totalReturn: '%', maxDrawdown: '%', sharpe: '' };
-  for (const [key, unit] of Object.entries(units)) {
-    const el = document.querySelector(`[data-stat="${key}"]`);
-    el.innerHTML = `--${unit ? `<span class="unit">${unit}</span>` : ''}`;
-    const tile = el.closest('.stat');
-    tile.classList.add('pending');
-    tile.querySelector('.delta').textContent = '執行 AI 分析後更新';
-  }
-  document.getElementById('signal-table-body').innerHTML = '';
-  document.getElementById('signal-empty').style.display = '';
-  document.getElementById('signal-count').textContent = '';
-  document.getElementById('panel-perf').classList.remove('show');
-  document.querySelector('#btn-ai-scan .btn-label').textContent = '啟動 AI 策略分析';
-}
-document.getElementById('symbol-select').addEventListener('change', (e) => {
-  const cfg = SYMBOLS[e.target.value];
-  candles = QP.generateCandles(cfg.seed, DAYS, cfg.start);
-  resetAnalysis();
-  renderChart();
-  updatePriceStat();
-  document.getElementById('chart-main').setAttribute('aria-label', `${cfg.label} 日 K 線圖，含 MA5、MA20、MA60 均線與成交量`);
-  if (window.showChartTab) window.showChartTab('sim');
-});
-
-/* ============ Pro 訂閱模擬結帳：form → processing → success ============ */
-(function initCheckout() {
-  const backdrop = document.getElementById('checkout-modal');
-  const form = document.getElementById('checkout-form');
-  const steps = backdrop.querySelectorAll('.m-step');
-  const $ = (id) => document.getElementById(id);
-  let processing = false;
-
-  function goStep(name) {
-    steps.forEach((s) => { s.hidden = s.dataset.step !== name; });
-  }
-  function openCheckout() {
-    goStep('form');
-    backdrop.classList.add('show');
-    setTimeout(() => $('cc-name').focus(), 260);
-  }
-  function closeCheckout() {
-    if (processing) return; // 模擬請款中不可關閉
-    backdrop.classList.remove('show');
-  }
-  window.openCheckout = openCheckout;
-  $('btn-upgrade').addEventListener('click', openCheckout);
-  $('btn-upgrade-2').addEventListener('click', openCheckout);
-  $('checkout-close').addEventListener('click', closeCheckout);
-  backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCheckout(); });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && backdrop.classList.contains('show')) closeCheckout();
-  });
-
-  /* 輸入即時格式化 */
-  $('cc-number').addEventListener('input', (e) => { e.target.value = QP.formatCardNumber(e.target.value); });
-  $('cc-cvc').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3); });
-  $('inv-gui').addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 8); });
-  $('cc-exp').addEventListener('input', (e) => {
-    let v = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (v.length >= 3) v = `${v.slice(0, 2)}/${v.slice(2)}`;
-    e.target.value = v;
-  });
-  $('inv-carrier').addEventListener('input', (e) => {
-    e.target.value = e.target.value.toUpperCase().slice(0, 8);
-  });
-
-  function setError(input, message) {
-    const label = input.closest('label');
-    label.classList.remove('invalid');
-    if (message) {
-      label.querySelector('.err').textContent = message;
-      // 重觸發 shake 動畫
-      void label.offsetWidth;
-      label.classList.add('invalid');
-      return false;
-    }
-    return true;
-  }
-
-  function validateForm() {
-    let firstBad = null;
-    const check = (input, ok, msg) => {
-      if (!setError(input, ok ? '' : msg) && !firstBad) firstBad = input;
-    };
-    check($('cc-name'), $('cc-name').value.trim().length >= 2, '請輸入持卡人姓名');
-    const card = QP.validateCard($('cc-number').value);
-    check($('cc-number'), card.valid, card.error || '');
-    check($('cc-exp'), /^(0[1-9]|1[0-2])\/\d{2}$/.test($('cc-exp').value), '格式需為 MM/YY');
-    check($('cc-cvc'), /^\d{3}$/.test($('cc-cvc').value), '需為 3 碼數字');
-    const gui = QP.validateGui($('inv-gui').value);
-    check($('inv-gui'), gui.valid, gui.error || '');
-    const carrier = $('inv-carrier').value.trim();
-    check($('inv-carrier'), carrier === '' || /^\/[0-9A-Z.+-]{7}$/.test(carrier), '手機條碼格式如 /ABC1234');
-    if (firstBad) firstBad.focus();
-    return !firstBad;
-  }
-
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    if (!validateForm()) return;
-    processing = true;
-    goStep('processing');
-    setTimeout(() => {
-      /* 填入模擬發票資訊 */
-      $('inv-number').textContent = QP.mockInvoiceNumber(Math.random);
-      const gui = $('inv-gui').value.trim();
-      const carrier = $('inv-carrier').value.trim();
-      $('inv-method').textContent = gui ? `統編 ${gui}` : (carrier ? `載具 ${carrier}` : '會員載具（雲端發票）');
-      processing = false;
-      goStep('success');
-      /* 解鎖 Pro 策略卡 */
-      const proCard = document.querySelector('.strategy.locked');
-      if (proCard) {
-        proCard.classList.remove('locked');
-        proCard.removeAttribute('aria-disabled');
-        proCard.setAttribute('role', 'radio');
-        proCard.querySelector('.s-lock').textContent = 'PRO ✓';
-        STRATEGY_NAMES.pro = '深度學習 Alpha';
-        proCard.insertAdjacentHTML('beforeend', '<span class="s-check">✓ 已選</span>');
-      }
-      showToast('<b>Pro 已啟用</b>：深度學習 Alpha 策略已解鎖');
-    }, 2200);
-  });
-
-  $('checkout-done').addEventListener('click', () => backdrop.classList.remove('show'));
-})();
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal:not(.in)').forEach((el) => io.observe(el));
 </script>
+<script src="checkout.js"></script>
 </body>
 </html>
