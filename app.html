@@ -246,6 +246,24 @@ table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560
 .sig-chip.sell{color:var(--down)}
 .empty-state{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:.85rem}
 
+/* ============ 績效分析分頁 ============ */
+.metrics-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));border-bottom:1px solid var(--border)}
+.metric{padding:10px 14px}
+.metric+.metric{border-left:1px solid var(--border)}
+.metric .l{font-family:var(--font-mono);font-size:.62rem;color:var(--ink-3);letter-spacing:.08em;white-space:nowrap}
+.metric .v{font-family:var(--font-mono);font-size:1.15rem;font-weight:600;margin-top:2px}
+.metric .h{font-size:.66rem;color:var(--ink-3);line-height:1.4;margin-top:2px}
+#chart-equity{width:100%;height:300px;border-bottom:1px solid var(--border)}
+#chart-monthly{width:100%;height:170px;border-bottom:1px solid var(--border)}
+.compare-wrap{padding-bottom:4px}
+.compare-title{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.08em;padding:10px 16px 2px}
+table.compare td.best{color:var(--brand);font-weight:600}
+@media (max-width:900px){
+  .metrics-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .metric:nth-child(4){border-left:none}
+  .metric:nth-child(n+4){border-top:1px solid var(--border)}
+}
+
 /* ============ Toast ============ */
 #toast-root{position:fixed;top:64px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{
@@ -429,19 +447,58 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
     <!-- 訊號紀錄：置於左欄第二列，與側欄並排填滿版面 -->
     <section class="card signal-card" id="signals">
       <div class="card-head">
-        <span class="card-title">AI 訊號紀錄</span>
+        <div class="chart-tabs" role="tablist" aria-label="分析分頁">
+          <button class="chart-tab selected" data-pane="signals" role="tab" aria-selected="true">訊號紀錄</button>
+          <button class="chart-tab" data-pane="trades" role="tab" aria-selected="false">交易明細</button>
+          <button class="chart-tab" data-pane="analytics" role="tab" aria-selected="false">績效分析</button>
+        </div>
         <span class="card-note" id="signal-count"></span>
         <span class="nav-spacer"></span>
         <button class="btn-export" id="btn-export-csv" hidden>匯出 CSV</button>
       </div>
-      <div class="table-scroll">
-        <table class="signals">
-          <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
-          <tbody id="signal-table-body"></tbody>
-        </table>
+      <div class="pane" id="pane-signals">
+        <div class="table-scroll">
+          <table class="signals">
+            <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
+            <tbody id="signal-table-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="signal-empty">
+          尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
+        </div>
       </div>
-      <div class="empty-state" id="signal-empty">
-        尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
+      <div class="pane" id="pane-trades" hidden>
+        <div class="table-scroll">
+          <table class="signals">
+            <thead><tr><th>進場日</th><th>出場日</th><th>持有天數</th><th>進場價</th><th>出場價</th><th>單筆損益</th></tr></thead>
+            <tbody id="trade-table-body"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="trade-empty">執行 AI 分析後，這裡會列出每一筆買賣配對的損益</div>
+      </div>
+      <div class="pane" id="pane-analytics" hidden>
+        <div class="empty-state" id="analytics-empty">執行 AI 分析後，這裡會呈現權益曲線、回撤與風險調整指標</div>
+        <div id="analytics-body" hidden>
+          <div class="metrics-grid">
+            <div class="metric"><div class="l">Profit Factor</div><div class="v" data-metric="profitFactor">--</div><div class="h">獲利÷虧損，&gt;1.3 為佳</div></div>
+            <div class="metric"><div class="l">Sortino</div><div class="v" data-metric="sortino">--</div><div class="h">只罰下跌波動的年化比率</div></div>
+            <div class="metric"><div class="l">Calmar</div><div class="v" data-metric="calmar">--</div><div class="h">年化報酬÷最大回撤</div></div>
+            <div class="metric"><div class="l">單筆期望值</div><div class="v" data-metric="expectancy">--</div><div class="h">每筆交易平均報酬</div></div>
+            <div class="metric"><div class="l">最大連虧</div><div class="v" data-metric="maxConsecLosses">--</div><div class="h">連續虧損筆數上限</div></div>
+            <div class="metric"><div class="l">平均持有</div><div class="v" data-metric="avgHoldDays">--</div><div class="h">每筆交易平均天數</div></div>
+          </div>
+          <div id="chart-equity" role="img" aria-label="策略權益曲線與水下回撤圖"></div>
+          <div id="chart-monthly" role="img" aria-label="策略月報酬長條圖"></div>
+          <div class="compare-wrap">
+            <div class="compare-title">三策略同場回測（同一標的、同一期間）</div>
+            <div class="table-scroll">
+              <table class="signals compare">
+                <thead><tr><th>策略</th><th>累積報酬</th><th>勝率</th><th>最大回撤</th><th>夏普</th><th>Profit Factor</th></tr></thead>
+                <tbody id="compare-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   </section>
@@ -613,6 +670,7 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   if (window.applySignalOverlay) window.applySignalOverlay();
   buildTicker();
   if (typeof buildTvTa === 'function') buildTvTa();
+  if (typeof renderAnalytics === 'function' && state.signals && currentPane === 'analytics') renderAnalytics();
   if (typeof tvChartInited !== 'undefined' && tvChartInited) buildTvChart();
 });
 try {
@@ -850,8 +908,10 @@ function runAiScan() {
     applySignalOverlay();
     updateStats(perf);
     fillSignalTable(signals);
+    fillTradeTable();
     showPerfPanel(signals, perf);
     document.getElementById('btn-export-csv').hidden = false;
+    if (currentPane === 'analytics') renderAnalytics();
 
     const latest = signals[signals.length - 1];
     showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：偵測到 ${signals.length} 個訊號`);
@@ -868,6 +928,158 @@ function runAiScan() {
 }
 document.getElementById('btn-ai-scan').addEventListener('click', runAiScan);
 
+/* ============ 訊號卡三分頁 ============ */
+let equityChart = null;
+let monthlyChart = null;
+let currentPane = 'signals';
+
+function showPane(name) {
+  currentPane = name;
+  document.querySelectorAll('[data-pane]').forEach((b) => {
+    const on = b.dataset.pane === name;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  ['signals', 'trades', 'analytics'].forEach((p) => {
+    document.getElementById(`pane-${p}`).hidden = p !== name;
+  });
+  if (name === 'analytics' && state.signals) renderAnalytics();
+}
+document.querySelectorAll('[data-pane]').forEach((b) => {
+  b.addEventListener('click', () => showPane(b.dataset.pane));
+});
+
+/* 交易明細 */
+function fillTradeTable() {
+  const trades = QP.pairTrades(candles, state.signals);
+  const body = document.getElementById('trade-table-body');
+  document.getElementById('trade-empty').style.display = 'none';
+  body.innerHTML = '';
+  [...trades].reverse().forEach((t, i) => {
+    const win = t.returnPct >= 0;
+    const tr = document.createElement('tr');
+    tr.className = 'sig-row';
+    tr.style.animationDelay = `${i * 45}ms`;
+    tr.innerHTML = `
+      <td class="mono">${t.entryDate}</td>
+      <td class="mono">${t.exitDate}</td>
+      <td class="mono">${t.holdDays} 天</td>
+      <td class="mono">${fmt(t.entryPrice)}</td>
+      <td class="mono">${fmt(t.exitPrice)}</td>
+      <td class="mono" style="color:var(${win ? '--up' : '--down'})">${win ? '+' : ''}${t.returnPct.toFixed(2)}%</td>`;
+    body.appendChild(tr);
+  });
+}
+
+/* 績效分析（指標格＋權益/回撤圖＋月報酬＋策略比較） */
+function renderAnalytics() {
+  if (!state.signals || typeof echarts === 'undefined') return;
+  const t = themeTokens();
+  const perf = state.perf;
+  document.getElementById('analytics-empty').style.display = 'none';
+  document.getElementById('analytics-body').hidden = false;
+
+  const fmtMetric = {
+    profitFactor: (v) => (v >= 99 ? '∞' : v.toFixed(2)),
+    sortino: (v) => v.toFixed(2),
+    calmar: (v) => v.toFixed(2),
+    expectancy: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
+    maxConsecLosses: (v) => `${v} 筆`,
+    avgHoldDays: (v) => `${v.toFixed(1)} 天`,
+  };
+  for (const [key, f] of Object.entries(fmtMetric)) {
+    document.querySelector(`[data-metric="${key}"]`).textContent = f(perf[key]);
+  }
+
+  const dates = candles.map((c) => c.date);
+  const es = QP.equitySeries(candles, state.signals);
+  const axis = (extra) => Object.assign({
+    axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false },
+    axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono' },
+    splitLine: { show: false },
+  }, extra);
+
+  if (!equityChart) equityChart = echarts.init(document.getElementById('chart-equity'));
+  equityChart.setOption({
+    animation: true, backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis', backgroundColor: t.panel, borderColor: t.border,
+      textStyle: { color: t.ink, fontSize: 11, fontFamily: 'IBM Plex Mono' },
+      valueFormatter: (v) => `${(v * 100).toFixed(2)}%`,
+    },
+    grid: [
+      { left: 14, right: 56, top: 26, height: '48%' },
+      { left: 14, right: 56, top: '68%', height: '24%' },
+    ],
+    xAxis: [
+      axis({ type: 'category', data: dates, boundaryGap: false, axisLabel: { show: false } }),
+      axis({ type: 'category', gridIndex: 1, data: dates, boundaryGap: false,
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => v.slice(5) } }),
+    ],
+    yAxis: [
+      axis({ scale: true, position: 'right',
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => `${((v - 1) * 100).toFixed(0)}%` },
+        splitLine: { lineStyle: { color: t.border, type: [2, 4] } } }),
+      axis({ gridIndex: 1, position: 'right', max: 0,
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => `${(v * 100).toFixed(0)}%` } }),
+    ],
+    series: [
+      { name: '權益曲線', type: 'line', data: es.equity, symbol: 'none',
+        lineStyle: { width: 2, color: t.brand }, itemStyle: { color: t.brand },
+        areaStyle: { color: t.brand, opacity: 0.07 } },
+      { name: '水下回撤', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: es.drawdown, symbol: 'none',
+        lineStyle: { width: 1.5, color: t.up }, itemStyle: { color: t.up },
+        areaStyle: { color: t.up, opacity: 0.18 } },
+    ],
+  }, true);
+
+  const months = QP.monthlyReturns(candles, state.signals);
+  if (!monthlyChart) monthlyChart = echarts.init(document.getElementById('chart-monthly'));
+  monthlyChart.setOption({
+    animation: true, backgroundColor: 'transparent',
+    tooltip: {
+      trigger: 'axis', backgroundColor: t.panel, borderColor: t.border,
+      textStyle: { color: t.ink, fontSize: 11, fontFamily: 'IBM Plex Mono' },
+      valueFormatter: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`,
+    },
+    grid: { left: 14, right: 56, top: 26, bottom: 24 },
+    xAxis: axis({ type: 'category', data: months.map((m) => m.month.slice(2)) }),
+    yAxis: axis({ position: 'right',
+      axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => `${v}%` },
+      splitLine: { lineStyle: { color: t.border, type: [2, 4] } } }),
+    series: [{
+      name: '月報酬', type: 'bar', barWidth: '55%',
+      data: months.map((m) => ({
+        value: m.returnPct,
+        itemStyle: { color: m.returnPct >= 0 ? t.up : t.down, opacity: 0.85 },
+      })),
+    }],
+  }, true);
+
+  /* 三策略比較 */
+  const body = document.getElementById('compare-table-body');
+  body.innerHTML = '';
+  const rows = ['ma-cross', 'momentum', 'ai'].map((key) => ({
+    key, name: STRATEGY_NAMES[key], perf: QP.calcPerformance(candles, QP.generateSignals(candles, key)),
+  }));
+  const best = Math.max(...rows.map((r) => r.perf.totalReturn));
+  for (const r of rows) {
+    const tr = document.createElement('tr');
+    const cur = r.key === state.strategy ? '（本次）' : '';
+    tr.innerHTML = `
+      <td>${r.name}${cur}</td>
+      <td class="mono ${r.perf.totalReturn === best ? 'best' : ''}">${r.perf.totalReturn >= 0 ? '+' : ''}${r.perf.totalReturn.toFixed(2)}%</td>
+      <td class="mono">${r.perf.winRate.toFixed(1)}%</td>
+      <td class="mono">${r.perf.maxDrawdown.toFixed(2)}%</td>
+      <td class="mono">${r.perf.sharpe.toFixed(2)}</td>
+      <td class="mono">${r.perf.profitFactor >= 99 ? '∞' : r.perf.profitFactor.toFixed(2)}</td>`;
+    body.appendChild(tr);
+  }
+  equityChart.resize();
+  monthlyChart.resize();
+}
+window.addEventListener('resize', () => { equityChart && equityChart.resize(); monthlyChart && monthlyChart.resize(); });
+
 /* ============ 標的切換：重生數據、清空分析、重繪 ============ */
 function resetAnalysis() {
   state.signals = null;
@@ -882,6 +1094,11 @@ function resetAnalysis() {
   }
   document.getElementById('signal-table-body').innerHTML = '';
   document.getElementById('signal-empty').style.display = '';
+  document.getElementById('trade-table-body').innerHTML = '';
+  document.getElementById('trade-empty').style.display = '';
+  document.getElementById('analytics-body').hidden = true;
+  document.getElementById('analytics-empty').style.display = '';
+  showPane('signals');
   document.getElementById('signal-count').textContent = '';
   document.getElementById('btn-export-csv').hidden = true;
   document.getElementById('panel-perf').classList.remove('show');

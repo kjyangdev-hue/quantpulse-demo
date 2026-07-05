@@ -154,7 +154,70 @@ function generateSignals(candles, strategy) {
   return signals;
 }
 
-/** 以 buy→sell 配對回測，計算績效指標（%，2 位小數） */
+/** 買賣訊號配對成逐筆交易 */
+function pairTrades(candles, signals) {
+  const trades = [];
+  for (let i = 0; i + 1 < signals.length; i += 2) {
+    const entry = signals[i];
+    const exit = signals[i + 1];
+    trades.push({
+      entryIndex: entry.index,
+      exitIndex: exit.index,
+      entryDate: candles[entry.index].date,
+      exitDate: candles[exit.index].date,
+      entryPrice: entry.price,
+      exitPrice: exit.price,
+      holdDays: exit.index - entry.index,
+      returnPct: round2((exit.price / entry.price - 1) * 100),
+    });
+  }
+  return trades;
+}
+
+/** 策略每日報酬（持倉區間跟隨收盤價、空手為 0） */
+function dailyStrategyReturns(candles, signals) {
+  const inPos = new Array(candles.length).fill(false);
+  for (const t of pairTrades(candles, signals)) {
+    for (let i = t.entryIndex + 1; i <= t.exitIndex; i++) inPos[i] = true;
+  }
+  const rets = [0];
+  for (let i = 1; i < candles.length; i++) {
+    rets.push(inPos[i] ? candles[i].close / candles[i - 1].close - 1 : 0);
+  }
+  return rets;
+}
+
+/** 權益曲線與水下回撤（皆與 candles 等長；equity 起點 1、drawdown ≤ 0） */
+function equitySeries(candles, signals) {
+  const rets = dailyStrategyReturns(candles, signals);
+  const equity = [];
+  const drawdown = [];
+  let eq = 1;
+  let peak = 1;
+  for (const r of rets) {
+    eq *= 1 + r;
+    peak = Math.max(peak, eq);
+    equity.push(Math.round(eq * 10000) / 10000);
+    drawdown.push(Math.round((eq / peak - 1) * 10000) / 10000);
+  }
+  return { equity, drawdown };
+}
+
+/** 策略月報酬（依交易日曆月聚合） */
+function monthlyReturns(candles, signals) {
+  const rets = dailyStrategyReturns(candles, signals);
+  const buckets = new Map();
+  for (let i = 0; i < candles.length; i++) {
+    const month = candles[i].date.slice(0, 7);
+    buckets.set(month, (buckets.get(month) || 1) * (1 + rets[i]));
+  }
+  return [...buckets.entries()].map(([month, growth]) => ({
+    month,
+    returnPct: round2((growth - 1) * 100),
+  }));
+}
+
+/** 以 buy→sell 配對回測，計算績效指標（%，2 位小數）＋風險調整指標 */
 function calcPerformance(candles, signals) {
   const rets = [];
   for (let i = 0; i + 1 < signals.length; i += 2) {
@@ -162,7 +225,10 @@ function calcPerformance(candles, signals) {
   }
   const trades = rets.length;
   if (trades === 0) {
-    return { trades: 0, winRate: 0, totalReturn: 0, maxDrawdown: 0, sharpe: 0 };
+    return {
+      trades: 0, winRate: 0, totalReturn: 0, maxDrawdown: 0, sharpe: 0,
+      profitFactor: 0, sortino: 0, calmar: 0, expectancy: 0, maxConsecLosses: 0, avgHoldDays: 0,
+    };
   }
   const wins = rets.filter((r) => r > 0).length;
   let equity = 1;
@@ -176,12 +242,38 @@ function calcPerformance(candles, signals) {
   const mean = rets.reduce((a, b) => a + b, 0) / trades;
   const variance = rets.reduce((a, b) => a + (b - mean) ** 2, 0) / trades;
   const std = Math.sqrt(variance);
+
+  /* 風險調整指標（Sortino/Calmar 以每日策略報酬年化，252 交易日） */
+  const daily = dailyStrategyReturns(candles, signals);
+  const dMean = daily.reduce((a, b) => a + b, 0) / daily.length;
+  const downside = daily.filter((r) => r < 0);
+  const downDev = downside.length
+    ? Math.sqrt(downside.reduce((a, b) => a + b * b, 0) / daily.length)
+    : 0;
+  const annualReturn = Math.pow(equity, 252 / daily.length) - 1;
+  const grossProfit = rets.filter((r) => r > 0).reduce((a, b) => a + b, 0);
+  const grossLoss = -rets.filter((r) => r < 0).reduce((a, b) => a + b, 0);
+  let consec = 0;
+  let maxConsec = 0;
+  for (const r of rets) {
+    consec = r < 0 ? consec + 1 : 0;
+    maxConsec = Math.max(maxConsec, consec);
+  }
+  const paired = pairTrades(candles, signals);
+  const avgHold = paired.reduce((a, t) => a + t.holdDays, 0) / paired.length;
+
   return {
     trades,
     winRate: round2((wins / trades) * 100),
     totalReturn: round2((equity - 1) * 100),
     maxDrawdown: round2(maxDD * 100),
     sharpe: round2(std === 0 ? 0 : (mean / std) * Math.sqrt(trades)),
+    profitFactor: grossLoss === 0 ? round2(grossProfit > 0 ? 99 : 0) : round2(grossProfit / grossLoss),
+    sortino: round2(downDev === 0 ? 0 : (dMean / downDev) * Math.sqrt(252)),
+    calmar: maxDD === 0 ? 0 : round2(annualReturn / maxDD),
+    expectancy: round2(mean * 100),
+    maxConsecLosses: maxConsec,
+    avgHoldDays: round2(avgHold),
   };
 }
 
@@ -239,6 +331,9 @@ const QP = {
   calcMA,
   generateSignals,
   calcPerformance,
+  pairTrades,
+  equitySeries,
+  monthlyReturns,
   formatCardNumber,
   validateCard,
   validateGui,

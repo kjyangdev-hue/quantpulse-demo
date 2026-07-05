@@ -79,3 +79,61 @@ test('validateGui：選填、8碼數字', () => {
 test('mockInvoiceNumber 格式', () => {
   assert.match(QP.mockInvoiceNumber(QP.mulberry32(42)), /^[A-Z]{2}-\d{8}$/);
 });
+
+test('pairTrades：買賣配對、持有天數與單筆報酬', () => {
+  const candles = QP.generateCandles(69, 240);
+  const signals = QP.generateSignals(candles, 'ai');
+  const trades = QP.pairTrades(candles, signals);
+  assert.ok(trades.length >= 1);
+  for (const t of trades) {
+    assert.ok(t.exitIndex > t.entryIndex);
+    assert.strictEqual(t.entryPrice, candles[t.entryIndex].close);
+    assert.strictEqual(t.exitPrice, candles[t.exitIndex].close);
+    assert.strictEqual(t.holdDays, t.exitIndex - t.entryIndex);
+    const expect = Math.round((t.exitPrice / t.entryPrice - 1) * 10000) / 100;
+    assert.ok(Math.abs(t.returnPct - expect) < 0.02);
+  }
+});
+
+test('equitySeries：長度、起點、回撤恆非正', () => {
+  const candles = QP.generateCandles(69, 240);
+  const signals = QP.generateSignals(candles, 'ai');
+  const es = QP.equitySeries(candles, signals);
+  assert.strictEqual(es.equity.length, candles.length);
+  assert.strictEqual(es.drawdown.length, candles.length);
+  assert.strictEqual(es.equity[0], 1);
+  for (const d of es.drawdown) assert.ok(d <= 0.000001);
+  const finalRet = (es.equity[es.equity.length - 1] - 1) * 100;
+  const perf = QP.calcPerformance(candles, signals);
+  assert.ok(Math.abs(finalRet - perf.totalReturn) < 0.5, `equity 終值 ${finalRet} 應接近 totalReturn ${perf.totalReturn}`);
+});
+
+test('monthlyReturns：月份格式與涵蓋範圍', () => {
+  const candles = QP.generateCandles(69, 240);
+  const signals = QP.generateSignals(candles, 'ai');
+  const months = QP.monthlyReturns(candles, signals);
+  assert.ok(months.length >= 10 && months.length <= 13);
+  for (const m of months) {
+    assert.match(m.month, /^\d{4}-\d{2}$/);
+    assert.ok(Number.isFinite(m.returnPct));
+  }
+});
+
+test('calcPerformance 擴充指標', () => {
+  const candles = QP.generateCandles(69, 240);
+  const perf = QP.calcPerformance(candles, QP.generateSignals(candles, 'ai'));
+  assert.ok(Number.isFinite(perf.profitFactor) && perf.profitFactor >= 0);
+  assert.ok(Number.isFinite(perf.sortino));
+  assert.ok(Number.isFinite(perf.calmar));
+  assert.ok(Number.isFinite(perf.expectancy));
+  assert.ok(Number.isInteger(perf.maxConsecLosses) && perf.maxConsecLosses >= 0);
+  assert.ok(perf.avgHoldDays > 0);
+});
+
+test('無交易時擴充指標安全歸零', () => {
+  const candles = QP.generateCandles(69, 30);
+  const perf = QP.calcPerformance(candles, []);
+  assert.strictEqual(perf.profitFactor, 0);
+  assert.strictEqual(perf.maxConsecLosses, 0);
+  assert.strictEqual(perf.avgHoldDays, 0);
+});
