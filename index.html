@@ -119,6 +119,20 @@ button{font-family:inherit;cursor:pointer}
 /* 圖表卡 */
 .chart-card{position:relative}
 #chart-main{width:100%;height:460px}
+#tv-chart{width:100%;height:460px}
+#tv-chart iframe{border:none}
+.chart-tabs{display:flex;gap:2px}
+.chart-tab{
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.04em;white-space:nowrap;
+  color:var(--ink-3);background:transparent;border:1px solid transparent;border-bottom:2px solid transparent;
+  border-radius:var(--radius);padding:5px 10px;transition:color .15s,border-color .15s;
+}
+.chart-tab:hover{color:var(--ink)}
+.chart-tab.selected{color:var(--brand);border-bottom-color:var(--brand)}
+.chart-tab:active{transform:translateY(1px)}
+#tv-ta-section.is-hidden{display:none}
+#tv-ta{min-height:360px}
+.ta-note{font-size:.7rem;color:var(--ink-3);padding:0 var(--space-4) var(--space-3);text-align:center}
 .scan-overlay{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;overflow:hidden}
 .scan-overlay.active{display:block}
 .scan-overlay .beam{
@@ -388,8 +402,14 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       <div class="card-head">
         <span class="card-title">台積電 2330（模擬）</span>
         <span class="card-note">240 交易日 · 日 K</span>
+        <span class="nav-spacer"></span>
+        <div class="chart-tabs" role="tablist" aria-label="圖表切換">
+          <button class="chart-tab selected" data-tab="sim" role="tab" aria-selected="true">模擬回測</button>
+          <button class="chart-tab" data-tab="tv" role="tab" aria-selected="false">TradingView 即時</button>
+        </div>
       </div>
       <div id="chart-main" role="img" aria-label="台積電 2330 模擬日 K 線圖，含 MA5、MA20、MA60 均線與成交量"></div>
+      <div id="tv-chart" hidden aria-label="TradingView 即時圖表（台積電 ADR）"></div>
       <div class="scan-overlay" id="scan-overlay">
         <div class="beam"></div>
         <span class="scan-tag">AI SCANNING…</span>
@@ -429,6 +449,11 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       </div>
       <div class="upgrade-hint">
         <button class="btn-upgrade-link" id="btn-upgrade-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>升級 Pro 解鎖全部 AI 策略</button>
+      </div>
+      <div id="tv-ta-section">
+        <div class="panel-title" style="border-top:1px solid var(--border)">// LIVE TA · 即時技術面（TradingView）</div>
+        <div id="tv-ta" aria-label="TradingView 台積電 ADR 即時技術面分析儀表"></div>
+        <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
       </div>
     </aside>
   </section>
@@ -530,8 +555,8 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
   <div class="wrap">
     <p class="disclaimer">
       <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（seed 69）演算法產生之<b>模擬數據</b>；
-      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部行情跑馬燈為 TradingView 第三方展示元件。
-      本頁所有內容不構成投資建議。
+      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部跑馬燈、「TradingView 即時」圖表分頁與側欄技術面儀表為
+      TradingView 第三方元件（<b>真實市場數據</b>，非模擬）。本頁所有內容不構成投資建議。
     </p>
     <p class="foot-meta">QUANTPULSE DEMO · BUILT WITH AI-ASSISTED WORKFLOW · ECHARTS 5 / VANILLA JS · 2026</p>
   </div>
@@ -683,6 +708,8 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   renderChart();
   if (window.applySignalOverlay) window.applySignalOverlay();
   buildTicker();
+  if (typeof buildTvTa === 'function') buildTvTa();
+  if (typeof tvChartInited !== 'undefined' && tvChartInited) buildTvChart();
 });
 try {
   const saved = localStorage.getItem('qp-theme');
@@ -714,6 +741,58 @@ function buildTicker() {
   setTimeout(() => { if (!shell.querySelector('iframe')) shell.classList.add('is-hidden'); }, 3500);
 }
 buildTicker();
+
+/* ============ TradingView 進階嵌入：Advanced Chart（懶載入）＋技術面儀表 ============ */
+const TV_SYMBOL = 'NYSE:TSM';
+let tvChartInited = false;
+
+function tvEmbed(container, widgetFile, config) {
+  container.innerHTML = '<div class="tradingview-widget-container" style="height:100%"><div class="tradingview-widget-container__widget" style="height:100%"></div></div>';
+  const s = document.createElement('script');
+  s.src = `https://s3.tradingview.com/external-embedding/embed-widget-${widgetFile}.js`;
+  s.async = true;
+  s.innerHTML = JSON.stringify(config);
+  container.querySelector('.tradingview-widget-container__widget').appendChild(s);
+}
+
+function buildTvChart() {
+  tvEmbed(document.getElementById('tv-chart'), 'advanced-chart', {
+    autosize: true, symbol: TV_SYMBOL, interval: 'D', timezone: 'Asia/Taipei',
+    theme: root.dataset.theme === 'light' ? 'light' : 'dark', style: '1', locale: 'zh_TW',
+    studies: ['STD;RSI', 'STD;MACD'], allow_symbol_change: true, hide_volume: false,
+    support_host: 'https://www.tradingview.com',
+  });
+  tvChartInited = true;
+}
+
+function buildTvTa() {
+  const section = document.getElementById('tv-ta-section');
+  const el = document.getElementById('tv-ta');
+  tvEmbed(el, 'technical-analysis', {
+    interval: '1D', symbol: TV_SYMBOL, width: '100%', height: 360,
+    colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark',
+    isTransparent: true, showIntervalTabs: false, disableInterval: false, locale: 'zh_TW',
+  });
+  setTimeout(() => { if (!el.querySelector('iframe')) section.classList.add('is-hidden'); }, 4000);
+}
+buildTvTa();
+
+/* 圖表分頁切換 */
+window.showChartTab = showChartTab;
+function showChartTab(name) {
+  document.querySelectorAll('.chart-tab').forEach((b) => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle('selected', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  document.getElementById('chart-main').style.display = name === 'sim' ? '' : 'none';
+  document.getElementById('tv-chart').hidden = name !== 'tv';
+  if (name === 'tv' && !tvChartInited) buildTvChart();
+  if (name === 'sim' && chart) chart.resize();
+}
+document.querySelectorAll('.chart-tab').forEach((b) => {
+  b.addEventListener('click', () => showChartTab(b.dataset.tab));
+});
 
 /* ============ Toast ============ */
 function showToast(html, type = 'info') {
@@ -836,6 +915,7 @@ function showPerfPanel(signals, perf) {
 function runAiScan() {
   if (state.scanning) return;
   state.scanning = true;
+  if (window.showChartTab) window.showChartTab('sim'); // 掃描結果畫在模擬圖上
   const btn = document.getElementById('btn-ai-scan');
   const overlay = document.getElementById('scan-overlay');
   btn.disabled = true;
