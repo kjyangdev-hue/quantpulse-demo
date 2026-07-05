@@ -1142,7 +1142,11 @@ window.onCheckoutSuccess = function () {
     proCard.classList.remove('locked');
     proCard.removeAttribute('aria-disabled');
     proCard.setAttribute('role', 'radio');
-    proCard.querySelector('.s-lock').textContent = 'PRO ✓';
+    proCard.setAttribute('aria-checked', 'false');
+    const lock = proCard.querySelector('.s-lock');
+    if (lock) lock.remove(); // PRO 鎖徽章讓位給選取勾勾，避免右上角疊字
+    const desc = proCard.querySelector('.s-desc');
+    if (desc) desc.textContent = 'LSTM 多市場因子模型，Pro 已解鎖';
     STRATEGY_NAMES.pro = '深度學習 Alpha';
     proCard.insertAdjacentHTML('beforeend', '<span class="s-check">✓ 已選</span>');
   }
