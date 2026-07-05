@@ -35,6 +35,8 @@ GitHub Actions（`.github/workflows/update-data.yml`）設定為每日台北 18:
 ## 本機執行
 
 ```bash
-python -m http.server 8787   # 或任何靜態伺服器
-node --test tests/           # 單元測試
+npm run serve      # 零依賴靜態伺服器（scripts/serve.mjs，port 8788）
+npm test           # 單元測試（node:test，14 項）
+npm run test:e2e   # E2E 測試（Playwright，19 項：儀表板／結帳防呆矩陣／官網動效）
+npm run data       # 更新行情快照
 ```

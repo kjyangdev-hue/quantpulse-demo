@@ -866,12 +866,15 @@ function applySignalOverlay() {
   });
 }
 
-/* 數字滾動 */
+/* 數字滾動（countGen 世代計數：reset 時遞增使進行中的動畫立即失效） */
+let countGen = 0;
 function countUp(el, target, decimals, unit) {
+  const gen = countGen;
   const dur = 850, t0 = performance.now();
   const startText = parseFloat(el.textContent);
   const from = Number.isFinite(startText) ? startText : 0;
   function frame(now) {
+    if (gen !== countGen) return; // 已被重置，停止覆寫
     const p = Math.min(1, (now - t0) / dur);
     const eased = 1 - Math.pow(1 - p, 3);
     const val = from + (target - from) * eased;
@@ -1130,6 +1133,7 @@ window.addEventListener('resize', () => { equityChart && equityChart.resize(); m
 
 /* ============ 標的切換：重生數據、清空分析、重繪 ============ */
 function resetAnalysis() {
+  countGen++; // 使進行中的數字滾動失效
   state.signals = null;
   state.perf = null;
   const units = { winRate: '%', totalReturn: '%', maxDrawdown: '%', sharpe: '' };

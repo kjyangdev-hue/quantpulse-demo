@@ -1,0 +1,28 @@
+{
+  "name": "quantpulse-demo",
+  "version": "1.0.0",
+  "description": "AI 量化策略儀表板技術展示（真實歷史數據）",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test tests/logic.test.js",
+    "test:e2e": "playwright test",
+    "data": "node scripts/fetch-data.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kjyangdev-hue/quantpulse-demo.git"
+  },
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/kjyangdev-hue/quantpulse-demo/issues"
+  },
+  "homepage": "https://github.com/kjyangdev-hue/quantpulse-demo#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.61.1"
+  },
+  "private": true
+}
