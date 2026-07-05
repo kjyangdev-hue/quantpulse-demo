@@ -1,4 +1,5 @@
 name: 每日行情快照更新
+# 快照管線：手動觸發 workflow_dispatch 或每日排程
 
 on:
   schedule:
