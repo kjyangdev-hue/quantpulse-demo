@@ -1,0 +1,27 @@
+name: 每日行情快照更新
+
+on:
+  schedule:
+    - cron: '30 10 * * *'   # 每日 UTC 10:30（台北 18:30，台股收盤後）
+  workflow_dispatch:         # 允許手動觸發
+
+permissions:
+  contents: write
+
+jobs:
+  update-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 抓取最新快照
+        run: node scripts/fetch-data.mjs
+      - name: 有變動才 commit
+        run: |
+          git config user.name "quantpulse-data-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore(data): 每日行情快照更新"
+          git push
