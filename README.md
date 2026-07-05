@@ -5,8 +5,10 @@
 ## 資料管線
 
 ```bash
-node scripts/fetch-data.mjs   # 更新 data/2330.json、data/taiex.json 快照
+node scripts/fetch-data.mjs   # 更新 data/ 六標的快照（2330/TAIEX/0050/2317/NVDA/BTC）
 ```
+
+GitHub Actions（`.github/workflows/update-data.yml`）每日台北 18:30 自動執行並 commit 有變動的快照。
 
 ## 結構
 

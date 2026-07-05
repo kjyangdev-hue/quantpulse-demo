@@ -387,6 +387,10 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
         <select class="symbol-select" id="symbol-select" aria-label="切換標的">
           <option value="2330">台積電 2330</option>
           <option value="taiex">加權指數 TAIEX</option>
+          <option value="0050">元大台灣50 0050</option>
+          <option value="2317">鴻海 2317</option>
+          <option value="nvda">NVIDIA（USD）</option>
+          <option value="btc">Bitcoin（USD）</option>
         </select>
         <span class="card-note" id="data-note">數據載入中…</span>
         <span class="nav-spacer"></span>
@@ -525,6 +529,10 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 const SYMBOLS = {
   '2330': { label: '台積電 2330', file: 'data/2330.json', fallbackSeed: 69, fallbackStart: 1920 },
   'taiex': { label: '加權指數 TAIEX', file: 'data/taiex.json', fallbackSeed: 99, fallbackStart: 33000 },
+  '0050': { label: '元大台灣50 0050', file: 'data/0050.json', fallbackSeed: 7, fallbackStart: 85 },
+  '2317': { label: '鴻海 2317', file: 'data/2317.json', fallbackSeed: 23, fallbackStart: 190 },
+  'nvda': { label: 'NVIDIA（USD）', file: 'data/nvda.json', fallbackSeed: 88, fallbackStart: 150 },
+  'btc': { label: 'Bitcoin（USD）', file: 'data/btc.json', fallbackSeed: 123, fallbackStart: 50000 },
 };
 let candles = null;
 let dataMeta = null;
@@ -661,7 +669,7 @@ function baseOption() {
       {
         scale: true, gridIndex: 1, position: 'right', splitNumber: 2,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'K') },
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v >= 1e9 ? (v / 1e9).toFixed(0) + 'B' : v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'K') },
         splitLine: { show: false },
       },
     ],
@@ -1030,9 +1038,15 @@ function renderAnalytics() {
     splitLine: { show: false },
   }, extra);
 
+  const base = candles[0].close;
+  const benchmark = candles.map((c) => Math.round((c.close / base) * 10000) / 10000);
   if (!equityChart) equityChart = echarts.init(document.getElementById('chart-equity'));
   equityChart.setOption({
     animation: true, backgroundColor: 'transparent',
+    legend: {
+      data: ['策略權益', '買進持有'], top: 4, right: 14, icon: 'roundRect',
+      itemWidth: 14, itemHeight: 3, textStyle: { color: t.ink2, fontSize: 10, fontFamily: 'IBM Plex Mono' },
+    },
     tooltip: {
       trigger: 'axis', backgroundColor: t.panel, borderColor: t.border,
       textStyle: { color: t.ink, fontSize: 11, fontFamily: 'IBM Plex Mono' },
@@ -1055,9 +1069,12 @@ function renderAnalytics() {
         axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => `${(v * 100).toFixed(0)}%` } }),
     ],
     series: [
-      { name: '權益曲線', type: 'line', data: es.equity, symbol: 'none',
+      { name: '策略權益', type: 'line', data: es.equity, symbol: 'none', z: 3,
         lineStyle: { width: 2, color: t.brand }, itemStyle: { color: t.brand },
         areaStyle: { color: t.brand, opacity: 0.07 } },
+      { name: '買進持有', type: 'line', data: benchmark, symbol: 'none', z: 2,
+        lineStyle: { width: 1.5, color: t.ma20, type: [4, 3] }, itemStyle: { color: t.ma20 },
+        emphasis: { disabled: true } },
       { name: '水下回撤', type: 'line', xAxisIndex: 1, yAxisIndex: 1, data: es.drawdown, symbol: 'none',
         lineStyle: { width: 1.5, color: t.up }, itemStyle: { color: t.up },
         areaStyle: { color: t.up, opacity: 0.18 } },

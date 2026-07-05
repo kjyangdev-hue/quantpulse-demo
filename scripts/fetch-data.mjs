@@ -8,6 +8,10 @@ import fs from 'node:fs';
 const SYMBOLS = [
   { key: '2330', yahoo: '2330.TW', name: '台積電 2330' },
   { key: 'taiex', yahoo: '%5ETWII', name: '加權指數 TAIEX' },
+  { key: '0050', yahoo: '0050.TW', name: '元大台灣50 0050' },
+  { key: '2317', yahoo: '2317.TW', name: '鴻海 2317' },
+  { key: 'nvda', yahoo: 'NVDA', name: 'NVIDIA（USD）' },
+  { key: 'btc', yahoo: 'BTC-USD', name: 'Bitcoin（USD）' },
 ];
 const round2 = (n) => Math.round(n * 100) / 100;
 
