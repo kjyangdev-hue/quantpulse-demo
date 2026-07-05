@@ -122,7 +122,11 @@ button{font-family:inherit;cursor:pointer}
 .stat.pending .value{color:var(--ink-3)}
 
 /* ============ 主格線 ============ */
-.grid-main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--space-3);align-items:start}
+.grid-main{display:grid;grid-template-columns:minmax(0,1fr) 320px;grid-template-rows:auto 1fr;gap:var(--space-3);align-items:start}
+.grid-main aside{grid-column:2;grid-row:1 / span 2}
+.grid-main .chart-card{grid-column:1}
+.grid-main .signal-card{grid-column:1;align-self:stretch;display:flex;flex-direction:column}
+.grid-main .signal-card .empty-state{flex:1;display:grid;place-items:center;align-content:center}
 .card{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
 .card-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
 .card-title{font-weight:700;font-size:.95rem}
@@ -218,7 +222,7 @@ button{font-family:inherit;cursor:pointer}
 .btn-upgrade-link:hover{background:color-mix(in srgb,var(--amber) 10%,transparent)}
 
 /* ============ 訊號表 ============ */
-.signal-card{margin-top:var(--space-3)}
+.signal-card{margin-top:0}
 .table-scroll{overflow-x:auto;max-height:420px;overflow-y:auto}
 table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560px}
 .signals th{
@@ -330,7 +334,8 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 
 /* ============ RWD（Task 5 細調） ============ */
 @media (max-width:1024px){
-  .grid-main{grid-template-columns:1fr}
+  .grid-main{grid-template-columns:1fr;grid-template-rows:none}
+  .grid-main aside,.grid-main .chart-card,.grid-main .signal-card{grid-column:1;grid-row:auto}
   .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
   .stats .stat:nth-child(4){border-left:none}
   .stats .stat:nth-child(n+4){border-top:1px solid var(--border)}
@@ -484,24 +489,24 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
         <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
       </div>
     </aside>
-  </section>
 
-  <!-- 訊號紀錄 -->
-  <section class="card signal-card" id="signals">
-    <div class="card-head">
-      <span class="card-title">AI 訊號紀錄</span>
-      <span class="card-note" id="signal-count"></span>
-    </div>
-    <div class="table-scroll">
-      <table class="signals">
-        <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
-        <tbody id="signal-table-body"></tbody>
-      </table>
-    </div>
-    <div class="empty-state" id="signal-empty">
-      <span class="glyph">[ awaiting_scan ]</span>
-      尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
-    </div>
+    <!-- 訊號紀錄：置於左欄第二列，與側欄並排填滿版面 -->
+    <section class="card signal-card" id="signals">
+      <div class="card-head">
+        <span class="card-title">AI 訊號紀錄</span>
+        <span class="card-note" id="signal-count"></span>
+      </div>
+      <div class="table-scroll">
+        <table class="signals">
+          <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
+          <tbody id="signal-table-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-state" id="signal-empty">
+        <span class="glyph">[ awaiting_scan ]</span>
+        尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
+      </div>
+    </section>
   </section>
 </main>
 
