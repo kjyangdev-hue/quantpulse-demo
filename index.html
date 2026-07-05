@@ -101,7 +101,6 @@ button{font-family:inherit;cursor:pointer}
 
 /* ============ 頁首區 ============ */
 .hero{padding:36px 0 4px}
-.eyebrow{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.22em;color:var(--brand);text-transform:uppercase}
 .hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(1.65rem,3.4vw,2.45rem);letter-spacing:.01em;margin:4px 0 2px;line-height:1.15}
 .hero .sub{color:var(--ink-2);font-size:.92rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .sim-badge{font-family:var(--font-mono);font-size:.66rem;color:var(--amber);border:1px solid var(--amber);border-radius:var(--radius);padding:2px 8px;letter-spacing:.08em}
@@ -156,7 +155,7 @@ button{font-family:inherit;cursor:pointer}
 #tv-ta-section.is-hidden{display:none}
 #tv-ta{min-height:360px;position:relative}
 #tv-ta::after{
-  content:"LOADING LIVE TA…";position:absolute;inset:0;display:grid;place-items:center;
+  content:"載入即時數據…";position:absolute;inset:0;display:grid;place-items:center;
   font-family:var(--font-mono);font-size:.68rem;letter-spacing:.22em;color:var(--ink-3);
   animation:blink 1.2s steps(2) infinite;pointer-events:none;
 }
@@ -238,7 +237,6 @@ table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560
 .sig-chip.buy{color:var(--up)}
 .sig-chip.sell{color:var(--down)}
 .empty-state{padding:30px 20px;text-align:center;color:var(--ink-3);font-size:.85rem}
-.empty-state .glyph{font-family:var(--font-mono);color:var(--brand);display:block;font-size:1rem;margin-bottom:6px}
 
 /* ============ Toast ============ */
 #toast-root{position:fixed;top:64px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
@@ -372,7 +370,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       QUANTPULSE <small>量化脈動</small>
     </span>
     <span class="nav-spacer"></span>
-    <span class="market-badge"><span class="dot"></span>SIM_MODE · 模擬數據就緒</span>
+    <span class="market-badge"><span class="dot"></span>模擬數據 · 就緒</span>
     <button class="icon-btn" id="btn-theme" title="切換深淺色主題" aria-label="切換深淺色主題">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
     </button>
@@ -389,11 +387,10 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 
 <main class="wrap" id="dashboard">
   <header class="hero">
-    <span class="eyebrow">// AI Quant Signal Engine</span>
     <h1>AI 量化策略儀表板</h1>
     <p class="sub">
       策略回測與買賣訊號引擎 · 標的：台積電 2330
-      <span class="sim-badge">SIMULATED DATA · 模擬數據</span>
+      <span class="sim-badge">模擬數據</span>
     </p>
   </header>
 
@@ -445,12 +442,12 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       <div id="tv-chart" hidden aria-label="TradingView 即時圖表（台積電 ADR）"></div>
       <div class="scan-overlay" id="scan-overlay">
         <div class="beam"></div>
-        <span class="scan-tag">AI SCANNING…</span>
+        <span class="scan-tag">AI 掃描中…</span>
       </div>
     </div>
 
     <aside class="card">
-      <div class="panel-title">// STRATEGY ENGINE　策略引擎</div>
+      <div class="panel-title">策略引擎</div>
       <div class="strategies" id="strategy-select" role="radiogroup" aria-label="策略選擇">
         <button class="strategy selected" data-strategy="ma-cross" role="radio" aria-checked="true">
           <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-8 6 2 9-6s5-2 9-8"/></svg></span>
@@ -484,7 +481,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
         <button class="btn-upgrade-link" id="btn-upgrade-2"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>升級 Pro 解鎖全部 AI 策略</button>
       </div>
       <div id="tv-ta-section">
-        <div class="panel-title" style="border-top:1px solid var(--border)">// LIVE TA · 即時技術面（TradingView）</div>
+        <div class="panel-title" style="border-top:1px solid var(--border)">即時技術面（TradingView）</div>
         <div id="tv-ta" aria-label="TradingView 台積電 ADR 即時技術面分析儀表"></div>
         <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
       </div>
@@ -503,7 +500,6 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
         </table>
       </div>
       <div class="empty-state" id="signal-empty">
-        <span class="glyph">[ awaiting_scan ]</span>
         尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
       </div>
     </section>
