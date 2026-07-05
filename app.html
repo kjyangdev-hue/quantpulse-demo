@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantPulse 量化脈動｜AI 量化策略儀表板（模擬展示）</title>
-<meta name="description" content="AI 量化策略儀表板前端技術展示——K 線圖、AI 買賣訊號、模擬訂閱金流。所有數據皆為模擬，不構成投資建議。">
+<title>QuantPulse 量化脈動｜AI 量化策略儀表板（技術展示）</title>
+<meta name="description" content="AI 量化策略儀表板技術展示——真實歷史 K 線快照、AI 買賣訊號回測、模擬訂閱金流。不構成投資建議。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://kjyangdev-hue.github.io/quantpulse-demo/">
 <meta property="og:title" content="QuantPulse 量化脈動｜AI 量化策略儀表板">
@@ -327,7 +327,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
     </span>
     <a class="nav-home" href="./">← 官網首頁</a>
     <span class="nav-spacer"></span>
-    <span class="market-badge"><span class="dot"></span>模擬數據 · 就緒</span>
+    <span class="market-badge"><span class="dot"></span><span id="market-badge-text">數據載入中…</span></span>
     <button class="icon-btn" id="btn-theme" title="切換深淺色主題" aria-label="切換深淺色主題">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
     </button>
@@ -347,14 +347,14 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
     <h1>AI 量化策略儀表板</h1>
     <p class="sub">
       策略回測與買賣訊號引擎 · 標的：台積電 2330
-      <span class="sim-badge">模擬數據</span>
+      <span class="sim-badge" id="data-badge">數據載入中…</span>
     </p>
   </header>
 
   <!-- 統計卡列 -->
   <section class="stats" aria-label="關鍵指標">
     <div class="stat">
-      <div class="label">收盤價（模擬）</div>
+      <div class="label">收盤價</div>
       <div class="value" id="stat-price">--</div>
       <div class="delta" id="stat-price-delta">--</div>
     </div>
@@ -385,13 +385,13 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
     <div class="card chart-card">
       <div class="card-head">
         <select class="symbol-select" id="symbol-select" aria-label="切換標的">
-          <option value="2330">台積電 2330（模擬）</option>
-          <option value="taiex">加權指數 TAIEX（模擬）</option>
+          <option value="2330">台積電 2330</option>
+          <option value="taiex">加權指數 TAIEX</option>
         </select>
-        <span class="card-note">240 交易日 · 日 K</span>
+        <span class="card-note" id="data-note">數據載入中…</span>
         <span class="nav-spacer"></span>
         <div class="chart-tabs" role="tablist" aria-label="圖表切換">
-          <button class="chart-tab selected" data-tab="sim" role="tab" aria-selected="true">模擬回測</button>
+          <button class="chart-tab selected" data-tab="sim" role="tab" aria-selected="true">歷史回測</button>
           <button class="chart-tab" data-tab="tv" role="tab" aria-selected="false">TradingView 即時</button>
         </div>
       </div>
@@ -464,7 +464,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
           </table>
         </div>
         <div class="empty-state" id="signal-empty">
-          尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
+          尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描近一年的歷史行情
         </div>
       </div>
       <div class="pane" id="pane-trades" hidden>
@@ -509,9 +509,9 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <footer>
   <div class="wrap">
     <p class="disclaimer">
-      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（2330：seed 69／TAIEX：seed 99）演算法產生之<b>模擬數據</b>；
-      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部跑馬燈、「TradingView 即時」圖表分頁與側欄技術面儀表為
-      TradingView 第三方元件（<b>真實市場數據</b>，非模擬）。本頁所有內容不構成投資建議。
+      <b>資料與展示聲明：</b>本頁面為前端技術展示作品。K 線行情為 <b>Yahoo Finance 歷史數據快照</b>（截至日期見圖表卡標示，非即時報價；
+      資料載入失敗時以固定種子模擬數據備援並明確標示）。AI 訊號與回測績效為演算法示範，<b>不構成投資建議</b>；
+      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。跑馬燈、「TradingView 即時」分頁與技術面儀表為 TradingView 第三方即時元件。
     </p>
     <p class="foot-meta">QUANTPULSE DEMO · BUILT WITH AI-ASSISTED WORKFLOW · ECHARTS 5 / VANILLA JS · 2026</p>
   </div>
@@ -521,17 +521,48 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
-/* ============ 資料初始化（可切換標的） ============ */
-const DAYS = 240;
+/* ============ 資料初始化：真實歷史快照（Yahoo Finance），離線以模擬備援 ============ */
 const SYMBOLS = {
-  '2330': { label: '台積電 2330（模擬）', seed: 69, start: 780 },
-  'taiex': { label: '加權指數 TAIEX（模擬）', seed: 99, start: 20000 },
+  '2330': { label: '台積電 2330', file: 'data/2330.json', fallbackSeed: 69, fallbackStart: 1920 },
+  'taiex': { label: '加權指數 TAIEX', file: 'data/taiex.json', fallbackSeed: 99, fallbackStart: 33000 },
 };
-let candles = QP.generateCandles(SYMBOLS['2330'].seed, DAYS, SYMBOLS['2330'].start);
+let candles = null;
+let dataMeta = null;
+const DATA_CACHE = {};
+
+async function loadSymbolData(key) {
+  if (DATA_CACHE[key]) return DATA_CACHE[key];
+  const cfg = SYMBOLS[key];
+  try {
+    const res = await fetch(cfg.file);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    DATA_CACHE[key] = { candles: json.candles, asOf: json.asOf, simulated: false };
+  } catch (err) {
+    DATA_CACHE[key] = { candles: QP.generateCandles(cfg.fallbackSeed, 240, cfg.fallbackStart), asOf: null, simulated: true };
+  }
+  return DATA_CACHE[key];
+}
+
+/* 套用已載入的標的資料並更新所有資料標示 */
+function applySymbol(key) {
+  const d = DATA_CACHE[key];
+  candles = d.candles;
+  dataMeta = d;
+  renderChart();
+  updatePriceStat();
+  document.getElementById('data-note').textContent = d.simulated
+    ? `${candles.length} 交易日 · 模擬備援數據`
+    : `${candles.length} 交易日 · 快照至 ${d.asOf}`;
+  document.getElementById('market-badge-text').textContent = d.simulated ? '模擬備援 · 就緒' : '歷史快照 · 就緒';
+  document.getElementById('data-badge').textContent = d.simulated ? '模擬備援數據' : `真實歷史數據 · 快照至 ${d.asOf}`;
+  document.getElementById('chart-main').setAttribute('aria-label', `${SYMBOLS[key].label} 日 K 線圖，含 MA5、MA20、MA60 均線與成交量`);
+}
 const fmt = (n) => n.toLocaleString('zh-Hant-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /* 收盤價統計卡 */
 function updatePriceStat() {
+  if (!candles) return;
   const last = candles[candles.length - 1], prev = candles[candles.length - 2];
   const chg = last.close - prev.close, pct = (chg / prev.close) * 100;
   document.getElementById('stat-price').textContent = fmt(last.close);
@@ -540,7 +571,6 @@ function updatePriceStat() {
   d.classList.remove('up', 'down');
   d.classList.add(chg >= 0 ? 'up' : 'down');
 }
-updatePriceStat();
 
 /* ============ 主題 ============ */
 const root = document.documentElement;
@@ -631,7 +661,7 @@ function baseOption() {
       {
         scale: true, gridIndex: 1, position: 'right', splitNumber: 2,
         axisLine: { show: false }, axisTick: { show: false },
-        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v / 1000).toFixed(0) + 'K' },
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v >= 1e6 ? (v / 1e6).toFixed(0) + 'M' : (v / 1000).toFixed(0) + 'K') },
         splitLine: { show: false },
       },
     ],
@@ -650,6 +680,7 @@ function baseOption() {
   };
 }
 function renderChart() {
+  if (!candles) return;
   const el = document.getElementById('chart-main');
   if (typeof echarts === 'undefined') {
     el.innerHTML = '<p style="padding:40px;text-align:center;color:var(--ink-3)">圖表資源載入失敗，請重新整理頁面</p>';
@@ -897,7 +928,7 @@ function runAiScan() {
   const overlay = document.getElementById('scan-overlay');
   btn.disabled = true;
   btn.classList.add('loading');
-  btn.querySelector('.btn-label').textContent = 'AI 掃描模擬行情中…';
+  btn.querySelector('.btn-label').textContent = 'AI 掃描歷史行情中…';
   overlay.classList.add('active');
 
   setTimeout(() => {
@@ -1133,15 +1164,19 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
   URL.revokeObjectURL(a.href);
 });
 
-document.getElementById('symbol-select').addEventListener('change', (e) => {
-  const cfg = SYMBOLS[e.target.value];
-  candles = QP.generateCandles(cfg.seed, DAYS, cfg.start);
+document.getElementById('symbol-select').addEventListener('change', async (e) => {
+  const key = e.target.value;
+  await loadSymbolData(key);
   resetAnalysis();
-  renderChart();
-  updatePriceStat();
-  document.getElementById('chart-main').setAttribute('aria-label', `${cfg.label} 日 K 線圖，含 MA5、MA20、MA60 均線與成交量`);
+  applySymbol(key);
   if (window.showChartTab) window.showChartTab('sim');
 });
+
+/* 初始載入 */
+(async function initData() {
+  await loadSymbolData('2330');
+  applySymbol('2330');
+})();
 
 
 </script>
