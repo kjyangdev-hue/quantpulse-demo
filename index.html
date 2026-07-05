@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuantPulse 量化脈動｜AI 量化策略儀表板（模擬展示）</title>
+<meta name="description" content="AI 量化策略儀表板前端技術展示——K 線圖、AI 買賣訊號、模擬訂閱金流。所有數據皆為模擬，不構成投資建議。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230B1018'/><path d='M6 20 L12 14 L16 17 L26 8' stroke='%232DD4BF' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='26' cy='8' r='3' fill='%232DD4BF'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" rel="stylesheet">
+<style>
+/* ============ 設計代幣 ============ */
+:root{
+  --bg:#0B1018; --bg-glow-1:rgba(45,212,191,.07); --bg-glow-2:rgba(57,135,229,.06);
+  --panel:#111927cc; --panel-solid:#111927; --panel-2:#0E1520;
+  --border:rgba(148,178,214,.14); --border-strong:rgba(148,178,214,.26);
+  --ink:#E8EEF7; --ink-2:#9FB0C7; --ink-3:#5F7189;
+  --brand:#2DD4BF; --brand-deep:#0E9384; --brand-ink:#062A26;
+  --up:#E5484D; --down:#17A673;              /* 台股慣例：紅漲綠跌（已通過 CVD 驗證） */
+  --ma5:#C98500; --ma20:#3987E5; --ma60:#C4586F;
+  --amber:#C98500;
+  --radius:14px; --radius-sm:9px;
+  --font-body:"Noto Sans TC",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  --font-display:"Noto Serif TC",serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --shadow-glow:0 0 0 1px rgba(45,212,191,.35),0 8px 32px -8px rgba(45,212,191,.45);
+  --grid-line:rgba(140,170,220,.05);
+}
+[data-theme="light"]{
+  --bg:#F4F6FA; --bg-glow-1:rgba(14,147,132,.08); --bg-glow-2:rgba(42,120,214,.07);
+  --panel:#FFFFFFe6; --panel-solid:#FFFFFF; --panel-2:#EDF1F7;
+  --border:rgba(30,55,90,.13); --border-strong:rgba(30,55,90,.24);
+  --ink:#14202F; --ink-2:#44566E; --ink-3:#7B8BA1;
+  --brand:#0E9384; --brand-deep:#0B7568; --brand-ink:#FFFFFF;
+  --up:#D7373F; --down:#0E8A62;
+  --ma5:#B67100; --ma20:#2A78D6; --ma60:#B04A62;
+  --grid-line:rgba(30,55,90,.05);
+}
+/* ============ 基底 ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);color:var(--ink);background:var(--bg);
+  min-height:100vh;line-height:1.6;overflow-x:hidden;
+  background-image:
+    radial-gradient(900px 500px at 8% -5%,var(--bg-glow-1),transparent 60%),
+    radial-gradient(800px 460px at 95% 12%,var(--bg-glow-2),transparent 55%),
+    repeating-linear-gradient(0deg,transparent 0 47px,var(--grid-line) 47px 48px),
+    repeating-linear-gradient(90deg,transparent 0 47px,var(--grid-line) 47px 48px);
+}
+body::after{ /* 顆粒質感 */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:.30;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:var(--brand);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+
+/* ============ 頂部導覽 ============ */
+.nav{
+  position:sticky;top:0;z-index:100;border-bottom:1px solid var(--border);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);backdrop-filter:blur(14px);
+}
+.nav-inner{display:flex;align-items:center;gap:20px;height:62px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-display);font-weight:900;font-size:1.18rem;color:var(--ink);letter-spacing:.02em}
+.brand svg{flex:none}
+.brand small{font-family:var(--font-mono);font-weight:400;font-size:.66rem;color:var(--brand);letter-spacing:.14em;margin-top:.35em}
+.nav-links{display:flex;gap:18px;margin-left:8px;font-size:.88rem}
+.nav-links a{color:var(--ink-2);transition:color .2s}
+.nav-links a:hover{color:var(--brand)}
+.nav-spacer{flex:1}
+.market-badge{display:flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:.72rem;color:var(--ink-2);border:1px solid var(--border);border-radius:99px;padding:5px 12px}
+.market-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--brand);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(45,212,191,.5)}55%{box-shadow:0 0 0 6px rgba(45,212,191,0)}}
+.icon-btn{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--ink-2);transition:.2s}
+.icon-btn:hover{color:var(--brand);border-color:var(--brand)}
+.btn-pro{
+  font-weight:700;font-size:.86rem;color:var(--brand-ink);border:none;border-radius:10px;padding:9px 18px;
+  background:linear-gradient(120deg,var(--brand) 0%,#4BE3CF 50%,var(--brand) 100%);background-size:200% 100%;
+  transition:.25s;box-shadow:0 4px 18px -6px rgba(45,212,191,.55);
+}
+.btn-pro:hover{background-position:100% 0;transform:translateY(-1px);box-shadow:var(--shadow-glow)}
+
+/* ============ 跑馬燈 ============ */
+.ticker-shell{border-bottom:1px solid var(--border);height:46px;overflow:hidden;position:relative}
+.ticker-shell.is-hidden{display:none}
+
+/* ============ 頁首區 ============ */
+.hero{padding:44px 0 8px}
+.eyebrow{font-family:var(--font-mono);font-size:.72rem;letter-spacing:.22em;color:var(--brand);text-transform:uppercase}
+.hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(1.7rem,3.6vw,2.6rem);letter-spacing:.01em;margin:6px 0 4px}
+.hero .sub{color:var(--ink-2);font-size:.95rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sim-badge{font-family:var(--font-mono);font-size:.68rem;color:var(--amber);border:1px solid color-mix(in srgb,var(--amber) 55%,transparent);border-radius:6px;padding:2px 8px;letter-spacing:.08em}
+
+/* ============ 統計卡列 ============ */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:26px 0}
+.stat{
+  position:relative;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px 18px 14px;overflow:hidden;
+}
+.stat::before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:2px;background:linear-gradient(90deg,var(--brand),transparent 70%);opacity:.65}
+.stat .label{font-size:.75rem;color:var(--ink-3);letter-spacing:.08em}
+.stat .value{font-family:var(--font-mono);font-size:1.55rem;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.stat .value .unit{font-size:.8rem;color:var(--ink-3);margin-left:2px}
+.stat .delta{font-family:var(--font-mono);font-size:.72rem;margin-top:2px;color:var(--ink-3)}
+.stat .delta.up{color:var(--up)}
+.stat .delta.down{color:var(--down)}
+.stat.pending .value{color:var(--ink-3)}
+
+/* ============ 主格線 ============ */
+.grid-main{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:16px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-head{display:flex;align-items:center;gap:12px;padding:16px 20px 0}
+.card-title{font-family:var(--font-display);font-weight:700;font-size:1.02rem}
+.card-note{font-family:var(--font-mono);font-size:.7rem;color:var(--ink-3)}
+
+/* 圖表卡 */
+.chart-card{position:relative}
+#chart-main{width:100%;height:460px}
+.scan-overlay{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;overflow:hidden;border-radius:var(--radius)}
+.scan-overlay.active{display:block}
+.scan-overlay .beam{
+  position:absolute;top:0;bottom:0;width:120px;left:-140px;
+  background:linear-gradient(90deg,transparent,rgba(45,212,191,.16) 45%,rgba(45,212,191,.5) 50%,rgba(45,212,191,.16) 55%,transparent);
+  animation:sweep 1.4s cubic-bezier(.4,0,.6,1) infinite;
+}
+@keyframes sweep{0%{left:-140px}100%{left:110%}}
+.scan-overlay .scan-tag{
+  position:absolute;top:14px;right:16px;font-family:var(--font-mono);font-size:.7rem;color:var(--brand);
+  border:1px solid color-mix(in srgb,var(--brand) 50%,transparent);border-radius:6px;padding:3px 10px;
+  background:color-mix(in srgb,var(--bg) 70%,transparent);animation:blink 1s steps(2) infinite;
+}
+@keyframes blink{50%{opacity:.45}}
+
+/* 策略面板 */
+.panel-title{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.2em;color:var(--brand);padding:18px 20px 10px}
+.strategies{display:flex;flex-direction:column;gap:10px;padding:0 16px}
+.strategy{
+  position:relative;display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;
+  background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;transition:.2s;color:var(--ink);
+}
+.strategy:hover{border-color:var(--border-strong)}
+.strategy.selected{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset}
+.strategy .s-icon{flex:none;width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--brand) 12%,transparent);color:var(--brand)}
+.strategy .s-name{font-weight:700;font-size:.9rem}
+.strategy .s-desc{font-size:.76rem;color:var(--ink-3);line-height:1.5}
+.strategy .s-check{position:absolute;top:10px;right:12px;font-family:var(--font-mono);font-size:.68rem;color:var(--brand);opacity:0;transition:.2s}
+.strategy.selected .s-check{opacity:1}
+.strategy.locked{opacity:.75}
+.strategy.locked .s-icon{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber)}
+.strategy.locked .s-lock{position:absolute;top:10px;right:12px;font-family:var(--font-mono);font-size:.66rem;color:var(--amber);letter-spacing:.08em}
+.panel-cta{padding:16px}
+.btn-scan{
+  position:relative;width:100%;border:none;border-radius:12px;padding:15px 18px;overflow:hidden;
+  font-size:1rem;font-weight:700;color:var(--brand-ink);
+  background:linear-gradient(120deg,var(--brand),#57E8D4);
+  box-shadow:0 6px 24px -8px rgba(45,212,191,.6);transition:.25s;
+}
+.btn-scan::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.35) 50%,transparent 70%);transform:translateX(-110%);animation:sheen 3.2s 1.2s infinite}
+@keyframes sheen{0%{transform:translateX(-110%)}45%,100%{transform:translateX(110%)}}
+.btn-scan:hover{transform:translateY(-2px);box-shadow:var(--shadow-glow)}
+.btn-scan:disabled{cursor:wait;filter:saturate(.4) brightness(.85);transform:none}
+.btn-scan .spinner{display:none;width:16px;height:16px;border:2px solid rgba(6,42,38,.3);border-top-color:var(--brand-ink);border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:8px}
+.btn-scan.loading .spinner{display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.panel-perf{padding:0 16px 16px;display:none;flex-direction:column;gap:8px}
+.panel-perf.show{display:flex}
+.perf-row{display:flex;justify-content:space-between;font-size:.82rem;color:var(--ink-2);border-bottom:1px dashed var(--border);padding:5px 2px}
+.perf-row b{font-family:var(--font-mono);color:var(--ink)}
+.upgrade-hint{padding:0 16px 18px}
+.btn-upgrade-link{width:100%;background:transparent;border:1px dashed color-mix(in srgb,var(--amber) 60%,transparent);color:var(--amber);border-radius:10px;padding:10px;font-size:.82rem;transition:.2s}
+.btn-upgrade-link:hover{background:color-mix(in srgb,var(--amber) 10%,transparent)}
+
+/* ============ 訊號表 ============ */
+.signal-card{margin-top:16px}
+.table-scroll{overflow-x:auto}
+table.signals{width:100%;border-collapse:collapse;font-size:.85rem;min-width:560px}
+.signals th{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.14em;color:var(--ink-3);text-align:left;padding:12px 20px;border-bottom:1px solid var(--border);font-weight:500}
+.signals td{padding:10px 20px;border-bottom:1px solid color-mix(in srgb,var(--border) 55%,transparent);color:var(--ink-2)}
+.signals td.mono{color:var(--ink)}
+.signals tr.sig-row{opacity:0;transform:translateY(6px);animation:rowin .45s forwards}
+@keyframes rowin{to{opacity:1;transform:none}}
+.sig-chip{font-family:var(--font-mono);font-size:.72rem;font-weight:600;border-radius:6px;padding:2px 9px}
+.sig-chip.buy{color:var(--up);background:color-mix(in srgb,var(--up) 14%,transparent)}
+.sig-chip.sell{color:var(--down);background:color-mix(in srgb,var(--down) 14%,transparent)}
+.empty-state{padding:34px 20px;text-align:center;color:var(--ink-3);font-size:.88rem}
+.empty-state .glyph{font-family:var(--font-mono);color:var(--brand);display:block;font-size:1.1rem;margin-bottom:6px}
+
+/* ============ Toast ============ */
+#toast-root{position:fixed;top:76px;right:20px;z-index:300;display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.toast{
+  display:flex;gap:10px;align-items:center;min-width:250px;max-width:330px;
+  background:var(--panel-solid);border:1px solid var(--border-strong);border-left:3px solid var(--brand);
+  border-radius:10px;padding:11px 14px;font-size:.83rem;color:var(--ink-2);
+  box-shadow:0 12px 34px -10px rgba(0,0,0,.55);animation:toastin .35s cubic-bezier(.2,.9,.3,1.2);
+}
+.toast.buy{border-left-color:var(--up)}
+.toast.sell{border-left-color:var(--down)}
+.toast b{color:var(--ink)}
+.toast.hide{animation:toastout .3s forwards}
+@keyframes toastin{from{opacity:0;transform:translateX(24px)}}
+@keyframes toastout{to{opacity:0;transform:translateX(24px)}}
+
+/* ============ 頁尾 ============ */
+footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
+.disclaimer{font-size:.78rem;color:var(--ink-3);line-height:1.8;max-width:760px}
+.disclaimer b{color:var(--amber)}
+.foot-meta{margin-top:10px;font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.06em}
+
+/* ============ RWD（Task 5 細調） ============ */
+@media (max-width:1024px){
+  .grid-main{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:640px){
+  .nav-links{display:none}
+  .market-badge{display:none}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  #chart-main{height:340px}
+  .hero{padding-top:28px}
+}
+</style>
+</head>
+<body>
+
+<!-- 導覽 -->
+<nav class="nav">
+  <div class="wrap nav-inner">
+    <span class="brand">
+      <svg width="26" height="26" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="none" stroke="var(--brand)" stroke-width="1.6" opacity=".5"/><path d="M6 20 L12 14 L16 17 L26 8" stroke="var(--brand)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="8" r="2.6" fill="var(--brand)"/></svg>
+      量化脈動 <small>QUANTPULSE</small>
+    </span>
+    <div class="nav-links">
+      <a href="#dashboard">儀表板</a><a href="#engine">策略引擎</a><a href="#signals">訊號紀錄</a>
+    </div>
+    <span class="nav-spacer"></span>
+    <span class="market-badge"><span class="dot"></span>模擬盤 · 資料就緒</span>
+    <button class="icon-btn" id="btn-theme" title="切換深淺色主題" aria-label="切換深淺色主題">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg>
+    </button>
+    <button class="btn-pro" id="btn-upgrade">升級 Pro</button>
+  </div>
+</nav>
+
+<!-- TradingView 跑馬燈（第三方元件，載入失敗自動隱藏） -->
+<div class="ticker-shell" id="ticker-shell">
+  <div class="tradingview-widget-container">
+    <div class="tradingview-widget-container__widget"></div>
+  </div>
+</div>
+
+<main class="wrap" id="dashboard">
+  <header class="hero">
+    <span class="eyebrow">// AI Quant Signal Engine</span>
+    <h1>AI 量化策略儀表板</h1>
+    <p class="sub">
+      策略回測與買賣訊號引擎 · 標的：台積電 2330
+      <span class="sim-badge">SIMULATED DATA · 模擬數據</span>
+    </p>
+  </header>
+
+  <!-- 統計卡列 -->
+  <section class="stats" aria-label="關鍵指標">
+    <div class="stat">
+      <div class="label">收盤價（模擬）</div>
+      <div class="value" id="stat-price">--</div>
+      <div class="delta" id="stat-price-delta">--</div>
+    </div>
+    <div class="stat pending">
+      <div class="label">策略勝率</div>
+      <div class="value" data-stat="winRate">--<span class="unit">%</span></div>
+      <div class="delta">執行 AI 分析後更新</div>
+    </div>
+    <div class="stat pending">
+      <div class="label">累積報酬</div>
+      <div class="value" data-stat="totalReturn">--<span class="unit">%</span></div>
+      <div class="delta">執行 AI 分析後更新</div>
+    </div>
+    <div class="stat pending">
+      <div class="label">最大回撤</div>
+      <div class="value" data-stat="maxDrawdown">--<span class="unit">%</span></div>
+      <div class="delta">執行 AI 分析後更新</div>
+    </div>
+    <div class="stat pending">
+      <div class="label">夏普值</div>
+      <div class="value" data-stat="sharpe">--</div>
+      <div class="delta">執行 AI 分析後更新</div>
+    </div>
+  </section>
+
+  <!-- 主圖表＋策略面板 -->
+  <section class="grid-main" id="engine">
+    <div class="card chart-card">
+      <div class="card-head">
+        <span class="card-title">台積電 2330（模擬）</span>
+        <span class="card-note">120 交易日 · 日 K</span>
+      </div>
+      <div id="chart-main" role="img" aria-label="台積電 2330 模擬日 K 線圖，含 MA5、MA20、MA60 均線與成交量"></div>
+      <div class="scan-overlay" id="scan-overlay">
+        <div class="beam"></div>
+        <span class="scan-tag">AI SCANNING…</span>
+      </div>
+    </div>
+
+    <aside class="card">
+      <div class="panel-title">// STRATEGY ENGINE　策略引擎</div>
+      <div class="strategies" id="strategy-select" role="radiogroup" aria-label="策略選擇">
+        <button class="strategy selected" data-strategy="ma-cross" role="radio" aria-checked="true">
+          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-8 6 2 9-6s5-2 9-8"/></svg></span>
+          <span><span class="s-name">均線交叉</span><br><span class="s-desc">MA5 與 MA20 黃金／死亡交叉進出場</span></span>
+          <span class="s-check">✓ 已選</span>
+        </button>
+        <button class="strategy" data-strategy="momentum" role="radio" aria-checked="false">
+          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20 L12 4 M12 4 l-4 2 M12 4 l2 4"/><path d="M14 20 l6-9"/></svg></span>
+          <span><span class="s-name">動能突破</span><br><span class="s-desc">突破 20 日高點買進、跌破 20 日低點出場</span></span>
+          <span class="s-check">✓ 已選</span>
+        </button>
+        <button class="strategy" data-strategy="ai" role="radio" aria-checked="false">
+          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></span>
+          <span><span class="s-name">AI 綜合 Alpha</span><br><span class="s-desc">多因子訊號聯集，均線＋動能交叉驗證</span></span>
+          <span class="s-check">✓ 已選</span>
+        </button>
+        <button class="strategy locked" data-strategy="pro" aria-disabled="true">
+          <span class="s-icon"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+          <span><span class="s-name">深度學習 Alpha</span><br><span class="s-desc">LSTM 多市場因子模型，Pro 訂閱限定</span></span>
+          <span class="s-lock">PRO 🔒</span>
+        </button>
+      </div>
+      <div class="panel-cta">
+        <button class="btn-scan" id="btn-ai-scan"><span class="spinner"></span><span class="btn-label">啟動 AI 策略分析</span></button>
+      </div>
+      <div class="panel-perf" id="panel-perf">
+        <div class="perf-row"><span>交易筆數</span><b id="perf-trades">--</b></div>
+        <div class="perf-row"><span>最新訊號</span><b id="perf-latest">--</b></div>
+      </div>
+      <div class="upgrade-hint">
+        <button class="btn-upgrade-link" id="btn-upgrade-2">🔓 升級 Pro 解鎖全部 AI 策略</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 訊號紀錄 -->
+  <section class="card signal-card" id="signals">
+    <div class="card-head">
+      <span class="card-title">AI 訊號紀錄</span>
+      <span class="card-note" id="signal-count"></span>
+    </div>
+    <div class="table-scroll">
+      <table class="signals">
+        <thead><tr><th>日期</th><th>策略</th><th>訊號</th><th>價格</th><th>判斷依據</th></tr></thead>
+        <tbody id="signal-table-body"></tbody>
+      </table>
+    </div>
+    <div class="empty-state" id="signal-empty">
+      <span class="glyph">[ awaiting_scan ]</span>
+      尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 120 個交易日的模擬行情
+    </div>
+  </section>
+</main>
+
+<div id="toast-root" aria-live="polite"></div>
+
+<footer>
+  <div class="wrap">
+    <p class="disclaimer">
+      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（seed 42）演算法產生之<b>模擬數據</b>；
+      「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部行情跑馬燈為 TradingView 第三方展示元件。
+      本頁所有內容不構成投資建議。
+    </p>
+    <p class="foot-meta">QUANTPULSE DEMO · BUILT WITH AI-ASSISTED WORKFLOW · ECHARTS 5 / VANILLA JS · 2026</p>
+  </div>
+</footer>
+
+<script src="logic.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+'use strict';
+/* ============ 資料初始化 ============ */
+const SEED = 42, DAYS = 120;
+const candles = QP.generateCandles(SEED, DAYS);
+const fmt = (n) => n.toLocaleString('zh-Hant-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/* 收盤價統計卡 */
+(function initPriceStat() {
+  const last = candles[candles.length - 1], prev = candles[candles.length - 2];
+  const chg = last.close - prev.close, pct = (chg / prev.close) * 100;
+  document.getElementById('stat-price').textContent = fmt(last.close);
+  const d = document.getElementById('stat-price-delta');
+  d.textContent = `${chg >= 0 ? '▲' : '▼'} ${fmt(Math.abs(chg))}（${chg >= 0 ? '+' : '-'}${Math.abs(pct).toFixed(2)}%）`;
+  d.classList.add(chg >= 0 ? 'up' : 'down');
+})();
+
+/* ============ 主題 ============ */
+const root = document.documentElement;
+function themeTokens() {
+  const s = getComputedStyle(root);
+  const v = (name) => s.getPropertyValue(name).trim();
+  return {
+    up: v('--up'), down: v('--down'), ma5: v('--ma5'), ma20: v('--ma20'), ma60: v('--ma60'),
+    ink: v('--ink'), ink2: v('--ink-2'), ink3: v('--ink-3'),
+    border: 'rgba(148,178,214,.16)', panel: v('--panel-solid'), brand: v('--brand'),
+  };
+}
+
+/* ============ K 線主圖 ============ */
+let chart = null;
+function baseOption() {
+  const t = themeTokens();
+  const dates = candles.map((c) => c.date);
+  const ohlc = candles.map((c) => [c.open, c.close, c.low, c.high]);
+  const volume = candles.map((c, i) => ({
+    value: c.volume,
+    itemStyle: { color: c.close >= c.open ? t.up : t.down, opacity: 0.5 },
+  }));
+  const maSeries = [
+    { name: 'MA5', period: 5, color: t.ma5, type: 'solid' },
+    { name: 'MA20', period: 20, color: t.ma20, type: [6, 3] },
+    { name: 'MA60', period: 60, color: t.ma60, type: [2, 3] },
+  ].map((m) => ({
+    name: m.name, type: 'line', data: QP.calcMA(candles, m.period),
+    symbol: 'none', smooth: true, z: 3,
+    lineStyle: { width: 2, color: m.color, type: m.type },
+    itemStyle: { color: m.color },
+    emphasis: { disabled: true },
+  }));
+  return {
+    animation: true,
+    backgroundColor: 'transparent',
+    legend: {
+      data: ['MA5', 'MA20', 'MA60'], top: 8, right: 16, icon: 'roundRect',
+      itemWidth: 14, itemHeight: 3, textStyle: { color: t.ink2, fontSize: 11, fontFamily: 'IBM Plex Mono' },
+    },
+    axisPointer: { link: [{ xAxisIndex: 'all' }], label: { backgroundColor: t.panel, color: t.ink, borderColor: t.border, borderWidth: 1 } },
+    tooltip: {
+      trigger: 'axis', axisPointer: { type: 'cross' },
+      backgroundColor: t.panel, borderColor: t.border, textStyle: { color: t.ink, fontSize: 12 },
+      extraCssText: 'box-shadow:0 12px 32px -8px rgba(0,0,0,.5);border-radius:10px;font-family:IBM Plex Mono;',
+      formatter(params) {
+        const k = params.find((p) => p.seriesType === 'candlestick');
+        if (!k) return '';
+        const c = candles[k.dataIndex];
+        const prev = candles[k.dataIndex - 1] || c;
+        const pct = ((c.close - prev.close) / prev.close) * 100;
+        const cl = c.close >= c.open ? '#E5484D' : '#17A673';
+        const mas = params.filter((p) => p.seriesType === 'line' && p.value != null)
+          .map((p) => `<div>${p.marker}${p.seriesName}　<b>${fmt(p.value)}</b></div>`).join('');
+        return `<div style="line-height:1.9;min-width:170px">
+          <div style="opacity:.7">${c.date}</div>
+          <div>開盤　<b>${fmt(c.open)}</b>　收盤　<b style="color:${cl}">${fmt(c.close)}</b></div>
+          <div>最高　<b>${fmt(c.high)}</b>　最低　<b>${fmt(c.low)}</b></div>
+          <div>漲跌　<b style="color:${cl}">${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%</b>　量　<b>${c.volume.toLocaleString()}</b></div>
+          ${mas}</div>`;
+      },
+    },
+    grid: [
+      { left: 14, right: 58, top: 38, height: '58%' },
+      { left: 14, right: 58, top: '76%', height: '15%' },
+    ],
+    xAxis: [
+      {
+        type: 'category', data: dates, boundaryGap: true,
+        axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false },
+        axisLabel: { color: t.ink3, fontSize: 10, fontFamily: 'IBM Plex Mono', formatter: (v) => v.slice(5) },
+        splitLine: { show: false },
+      },
+      {
+        type: 'category', gridIndex: 1, data: dates, boundaryGap: true,
+        axisLine: { lineStyle: { color: t.border } }, axisTick: { show: false }, axisLabel: { show: false },
+        splitLine: { show: false },
+      },
+    ],
+    yAxis: [
+      {
+        scale: true, position: 'right',
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: t.ink3, fontSize: 10, fontFamily: 'IBM Plex Mono' },
+        splitLine: { lineStyle: { color: t.border, type: [2, 4] } },
+      },
+      {
+        scale: true, gridIndex: 1, position: 'right', splitNumber: 2,
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: t.ink3, fontSize: 9, fontFamily: 'IBM Plex Mono', formatter: (v) => (v / 1000).toFixed(0) + 'K' },
+        splitLine: { show: false },
+      },
+    ],
+    dataZoom: [
+      { type: 'inside', xAxisIndex: [0, 1], start: 25, end: 100 },
+    ],
+    series: [
+      {
+        name: '日K', type: 'candlestick', data: ohlc, z: 2,
+        itemStyle: { color: t.up, color0: t.down, borderColor: t.up, borderColor0: t.down, borderWidth: 1.2 },
+        markPoint: { data: [] },
+      },
+      ...maSeries,
+      { name: '成交量', type: 'bar', xAxisIndex: 1, yAxisIndex: 1, data: volume, barWidth: '62%' },
+    ],
+  };
+}
+function renderChart() {
+  const el = document.getElementById('chart-main');
+  if (typeof echarts === 'undefined') {
+    el.innerHTML = '<p style="padding:40px;text-align:center;color:var(--ink-3)">圖表資源載入失敗，請重新整理頁面</p>';
+    return;
+  }
+  if (!chart) chart = echarts.init(el);
+  chart.setOption(baseOption(), true);
+}
+renderChart();
+window.addEventListener('resize', () => chart && chart.resize());
+
+/* 主題切換：重繪圖表以套用新代幣 */
+document.getElementById('btn-theme').addEventListener('click', () => {
+  const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+  root.dataset.theme = next;
+  try { localStorage.setItem('qp-theme', next); } catch (e) { /* 無痕模式 */ }
+  renderChart();
+});
+try {
+  const saved = localStorage.getItem('qp-theme');
+  if (saved && saved !== root.dataset.theme) { root.dataset.theme = saved; renderChart(); }
+} catch (e) { /* 無痕模式 */ }
+
+/* ============ TradingView 跑馬燈（失敗自動隱藏） ============ */
+(function initTicker() {
+  const shell = document.getElementById('ticker-shell');
+  const s = document.createElement('script');
+  s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js';
+  s.async = true;
+  s.innerHTML = JSON.stringify({
+    symbols: [
+      { proName: 'NYSE:TSM', title: '台積電 ADR' },
+      { proName: 'NASDAQ:NVDA', title: 'NVIDIA' },
+      { proName: 'NASDAQ:AAPL', title: 'Apple' },
+      { proName: 'FOREXCOM:SPXUSD', title: 'S&P 500' },
+      { proName: 'BITSTAMP:BTCUSD', title: 'BTC/USD' },
+    ],
+    showSymbolLogo: true, isTransparent: true, displayMode: 'adaptive',
+    colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark', locale: 'zh_TW',
+  });
+  s.onerror = () => shell.classList.add('is-hidden');
+  shell.querySelector('.tradingview-widget-container__widget').appendChild(s);
+  setTimeout(() => { if (!shell.querySelector('iframe')) shell.classList.add('is-hidden'); }, 3500);
+})();
+</script>
+</body>
+</html>
