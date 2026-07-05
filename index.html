@@ -182,10 +182,17 @@ section.block{padding:var(--space-8) 0}
 .feature p{font-size:.88rem;color:var(--ink-2);margin-top:6px}
 .feature .f-tag{display:inline-block;margin-top:12px;font-family:var(--font-mono);font-size:.66rem;color:var(--ink-3);letter-spacing:.08em;border:1px dashed var(--border);border-radius:var(--radius);padding:2px 8px}
 
-/* ============ 產品展示 ============ */
+/* ============ 產品展示（即時嵌入） ============ */
 .showcase{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
-.showcase figure{margin:0;border-bottom:1px solid var(--border)}
-.showcase img{display:block;width:100%;height:auto}
+.showcase-live{position:relative;border-bottom:1px solid var(--border);height:clamp(480px,62vh,720px)}
+.showcase-live iframe{display:block;width:100%;height:100%;border:none;background:var(--bg)}
+.live-hint{
+  position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  font-family:var(--font-mono);font-size:.72rem;letter-spacing:.18em;color:var(--ink-3);
+  animation:blinkdot 1.4s steps(2) infinite;
+}
+@keyframes blinkdot{50%{opacity:.3}}
+.showcase-live.loaded .live-hint{display:none}
 .showcase .sc-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:var(--space-4) var(--space-5)}
 .showcase .sc-foot p{font-size:.88rem;color:var(--ink-2);flex:1;min-width:220px}
 
@@ -361,12 +368,13 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
   <section class="block" style="padding-top:0">
     <div class="wrap">
       <div class="showcase reveal" data-reveal="zoom">
-        <figure>
-          <img src="og.png" alt="QuantPulse 儀表板畫面：K 線圖、AI 買賣訊號、策略引擎與績效統計" loading="lazy" width="1200" height="630">
-        </figure>
+        <div class="showcase-live" id="showcase-live">
+          <iframe id="live-demo" title="QuantPulse 儀表板即時預覽（可直接操作）" data-src="app.html"></iframe>
+          <div class="live-hint" id="live-hint">載入即時預覽中…</div>
+        </div>
         <div class="sc-foot">
-          <p>這不是設計稿——是可以直接操作的產品原型。點開 DEMO，執行 AI 分析、切換標的、走一次訂閱流程。</p>
-          <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ]</a>
+          <p>上方就是<b>即時嵌入的產品本體</b>——直接在這裡捲動、執行 AI 分析、切換標的都可以；要全螢幕體驗就開新頁。</p>
+          <a class="btn-solid" href="app.html">[ 全螢幕開啟 DEMO ]</a>
         </div>
       </div>
     </div>
@@ -595,6 +603,20 @@ function drawSpark() {
     line.style.strokeDashoffset = '0';
   }
 }
+
+/* ============ 即時預覽懶載入 ============ */
+(function lazyLiveDemo() {
+  const shell = document.getElementById('showcase-live');
+  const frame = document.getElementById('live-demo');
+  if (!shell || !frame) return;
+  const liveIO = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    liveIO.disconnect();
+    frame.addEventListener('load', () => shell.classList.add('loaded'), { once: true });
+    frame.src = frame.dataset.src;
+  }, { rootMargin: '400px' });
+  liveIO.observe(shell);
+})();
 
 /* ============ 滾動進場 ============ */
 const io = new IntersectionObserver((entries) => {

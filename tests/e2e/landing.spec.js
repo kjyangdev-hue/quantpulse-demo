@@ -35,6 +35,14 @@ test.describe('官網', () => {
     await expect(second.locator('.a')).toContainText('Yahoo Finance');
   });
 
+  test('產品展示為即時嵌入且可互動（iframe 內跑 AI 分析）', async ({ page }) => {
+    await page.locator('#showcase-live').scrollIntoViewIfNeeded();
+    const frame = page.frameLocator('#live-demo');
+    await expect(frame.locator('#btn-ai-scan')).toBeVisible({ timeout: 15000 });
+    await frame.locator('#btn-ai-scan').click();
+    await expect(frame.locator('#signal-table-body tr').first()).toBeVisible({ timeout: 10000 });
+  });
+
   test('官網→儀表板動線', async ({ page }) => {
     await page.locator('.hero-cta a.btn-solid').click();
     await expect(page).toHaveURL(/app\.html$/);
