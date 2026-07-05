@@ -124,9 +124,9 @@ button{font-family:inherit;cursor:pointer}
 /* ============ 主格線 ============ */
 .grid-main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--space-3);align-items:start}
 .card{background:var(--panel);border:1px solid var(--border-strong);border-radius:var(--radius);overflow:hidden}
-.card-head{display:flex;align-items:center;gap:12px;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
+.card-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:var(--space-3) var(--space-4);border-bottom:1px solid var(--border)}
 .card-title{font-weight:700;font-size:.95rem}
-.card-note{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.04em}
+.card-note{font-family:var(--font-mono);font-size:.68rem;color:var(--ink-3);letter-spacing:.04em;white-space:nowrap}
 .symbol-select{
   font-family:var(--font-body);font-weight:700;font-size:.9rem;color:var(--ink);
   background:transparent;border:1px solid var(--border);border-radius:var(--radius);
@@ -150,7 +150,13 @@ button{font-family:inherit;cursor:pointer}
 .chart-tab.selected{color:var(--brand);border-bottom-color:var(--brand)}
 .chart-tab:active{transform:translateY(1px)}
 #tv-ta-section.is-hidden{display:none}
-#tv-ta{min-height:360px}
+#tv-ta{min-height:360px;position:relative}
+#tv-ta::after{
+  content:"LOADING LIVE TA…";position:absolute;inset:0;display:grid;place-items:center;
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.22em;color:var(--ink-3);
+  animation:blink 1.2s steps(2) infinite;pointer-events:none;
+}
+#tv-ta-section.loaded #tv-ta::after{display:none}
 .ta-note{font-size:.7rem;color:var(--ink-3);padding:0 var(--space-4) var(--space-3);text-align:center}
 .scan-overlay{position:absolute;inset:0;z-index:5;display:none;pointer-events:none;overflow:hidden}
 .scan-overlay.active{display:block}
@@ -231,7 +237,7 @@ table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560
 .empty-state .glyph{font-family:var(--font-mono);color:var(--brand);display:block;font-size:1rem;margin-bottom:6px}
 
 /* ============ Toast ============ */
-#toast-root{position:fixed;top:64px;right:16px;z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+#toast-root{position:fixed;top:64px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none}
 .toast{
   display:flex;gap:10px;align-items:flex-start;min-width:250px;max-width:330px;
   background:var(--panel-solid);border:1px solid var(--border-strong);
@@ -248,7 +254,7 @@ table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560
 
 /* ============ 結帳 Modal ============ */
 .modal-backdrop{
-  position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:18px;
+  position:fixed;inset:0;z-index:450;display:grid;place-items:center;padding:18px;
   background:rgba(4,8,14,.66);backdrop-filter:blur(6px);
   opacity:0;pointer-events:none;transition:opacity .25s;
 }
@@ -270,7 +276,7 @@ table.signals{width:100%;border-collapse:collapse;font-size:.82rem;min-width:560
   display:flex;justify-content:space-between;align-items:center;font-size:.84rem;color:var(--ink-2);
   border:1px solid var(--brand);border-radius:var(--radius);padding:11px 14px;margin-bottom:16px;
 }
-.m-plan b{font-family:var(--font-mono);font-size:1.05rem;color:var(--ink)}
+.m-plan b{font-family:var(--font-mono);font-size:1.05rem;color:var(--ink);white-space:nowrap;margin-left:10px}
 .m-plan small{font-size:.7rem;color:var(--ink-3);font-weight:400}
 #checkout-form label{display:block;font-size:.78rem;color:var(--ink-2);margin-bottom:8px}
 #checkout-form input{
@@ -796,12 +802,27 @@ function buildTvChart() {
 function buildTvTa() {
   const section = document.getElementById('tv-ta-section');
   const el = document.getElementById('tv-ta');
+  section.classList.remove('loaded');
   tvEmbed(el, 'technical-analysis', {
     interval: '1D', symbol: TV_SYMBOL, width: '100%', height: 360,
     colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark',
     isTransparent: true, showIntervalTabs: false, disableInterval: false, locale: 'zh_TW',
   });
-  setTimeout(() => { if (!el.querySelector('iframe')) section.classList.add('is-hidden'); }, 4000);
+  let waited = 0;
+  const markLoaded = () => section.classList.add('loaded');
+  const poll = setInterval(() => {
+    waited += 400;
+    const iframe = el.querySelector('iframe');
+    if (iframe) {
+      clearInterval(poll);
+      // iframe 出現≠內容繪製完成：等 load 事件＋緩衝，並設保底
+      iframe.addEventListener('load', () => setTimeout(markLoaded, 400), { once: true });
+      setTimeout(markLoaded, 3500);
+    } else if (waited >= 4800) {
+      section.classList.add('is-hidden');
+      clearInterval(poll);
+    }
+  }, 400);
 }
 buildTvTa();
 
