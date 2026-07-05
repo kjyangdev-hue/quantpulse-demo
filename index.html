@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QuantPulse 量化脈動｜AI 量化策略平台（模擬展示）</title>
-<meta name="description" content="QuantPulse——AI 量化訊號引擎、多策略回測、TradingView 即時整合與訂閱金流的 B2B SaaS 展示。所有回測數據皆為模擬，不構成投資建議。">
+<title>QuantPulse 量化脈動｜AI 量化策略平台（技術展示）</title>
+<meta name="description" content="QuantPulse——AI 量化訊號引擎、真實歷史數據回測、TradingView 即時整合與訂閱金流的 B2B SaaS 技術展示。不構成投資建議。">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://kjyangdev-hue.github.io/quantpulse-demo/">
 <meta property="og:title" content="QuantPulse 量化脈動｜AI 量化策略平台">
@@ -240,7 +240,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
   <header class="hero">
     <div class="wrap hero-grid">
       <div class="reveal in">
-        <span class="sim-badge">技術展示 · 模擬數據</span>
+        <span class="sim-badge" id="data-badge">技術展示 · 數據載入中</span>
         <h1>AI 量化訊號引擎，<br>把交易紀律變成<em>系統</em></h1>
         <p class="lede">QuantPulse 將多策略回測、AI 買賣訊號與 TradingView 即時行情整合進單一儀表板，並內建訂閱金流與電子發票流程——從決策到收款，一條龍展示。</p>
         <div class="hero-cta">
@@ -250,11 +250,11 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
       </div>
       <div class="hero-card reveal in" style="transition-delay:.12s">
         <div class="hc-head">
-          <span class="hc-title">台積電 2330（模擬）</span>
+          <span class="hc-title">台積電 2330</span>
           <span class="nav-spacer"></span>
-          <span class="hc-note">240 交易日回測</span>
+          <span class="hc-note" id="hc-note">近一年回測</span>
         </div>
-        <svg class="spark" id="hero-spark" viewBox="0 0 640 220" role="img" aria-label="台積電 2330 模擬收盤價走勢"></svg>
+        <svg class="spark" id="hero-spark" viewBox="0 0 640 220" role="img" aria-label="台積電 2330 近一年收盤價走勢"></svg>
         <div class="hc-stats">
           <div class="hc-stat"><div class="l">累積報酬</div><div class="v pos" data-perf="totalReturn">--</div></div>
           <div class="hc-stat"><div class="l">勝率</div><div class="v" data-perf="winRate">--</div></div>
@@ -271,7 +271,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
     <div class="wrap">
       <div class="sec-head reveal">
         <h2>回測績效，算給你看</h2>
-        <p>以下數字由頁面即時執行「AI 綜合 Alpha」策略對 240 個交易日模擬行情回測而得——與 DEMO 中你按下分析按鈕看到的結果完全一致，非行銷話術。</p>
+        <p>以下數字由頁面即時執行「AI 綜合 Alpha」策略，對台積電 2330 <b>近一年真實歷史行情</b>回測而得——與 DEMO 中你按下分析按鈕看到的結果完全一致，非行銷話術。</p>
       </div>
       <div class="perf-band reveal">
         <div class="perf-cell"><div class="l">累積報酬</div><div class="v pos" data-perf="totalReturnPct">--</div></div>
@@ -279,7 +279,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
         <div class="perf-cell"><div class="l">最大回撤</div><div class="v" data-perf="maxDrawdownPct">--</div></div>
         <div class="perf-cell"><div class="l">夏普值</div><div class="v" data-perf="sharpe2">--</div></div>
       </div>
-      <p class="perf-note reveal">模擬回測聲明：行情由固定種子演算法產生（seed 69），不代表任何真實市場或未來績效。</p>
+      <p class="perf-note reveal"><span id="perf-asof">資料載入中；</span>歷史回測不代表未來績效，本頁內容不構成投資建議。</p>
     </div>
   </section>
 
@@ -347,7 +347,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
           <div class="p-price">NT$ 0</div>
           <p class="p-desc">先體驗，不用卡號</p>
           <ul>
-            <li>模擬行情 K 線與均線圖表</li>
+            <li>真實歷史 K 線與均線圖表</li>
             <li>均線交叉／動能突破策略</li>
             <li>TradingView 即時技術面</li>
           </ul>
@@ -395,7 +395,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
         </details>
         <details>
           <summary>圖表數據是真實行情嗎？</summary>
-          <p class="a">K 線與回測數據由固定種子演算法產生，屬於模擬行情；TradingView 分頁、技術面儀表盤與跑馬燈則是真實市場數據（第三方元件）。頁面上皆有明確標示。</p>
+          <p class="a">是。K 線與回測使用 Yahoo Finance 的真實歷史數據快照（由 repo 內的資料管線腳本產生，截至日期標示於頁面上，非即時報價）；TradingView 分頁、技術面儀表盤與跑馬燈為第三方即時數據。僅「訂閱結帳」為模擬流程。</p>
         </details>
         <details>
           <summary>Pro 策略要怎麼解鎖？</summary>
@@ -433,8 +433,8 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
       </div>
     </div>
     <p class="disclaimer">
-      <b>模擬展示聲明：</b>本網站為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子演算法產生之<b>模擬數據</b>；
-      「訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。TradingView 相關元件為第三方即時數據。本站所有內容不構成投資建議。
+      <b>資料與展示聲明：</b>本網站為前端技術展示作品。K 線行情為 <b>Yahoo Finance 歷史數據快照</b>（非即時報價，離線時以模擬數據備援並標示）；
+      AI 訊號與回測為演算法示範，<b>不構成投資建議</b>。「訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。TradingView 相關元件為第三方即時數據。
     </p>
     <p class="foot-meta">QUANTPULSE DEMO · BUILT WITH AI-ASSISTED WORKFLOW · ECHARTS 5 / VANILLA JS · 2026</p>
   </div>
@@ -457,20 +457,43 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   drawSpark();
 });
 
-/* ============ 真實計算的回測數字（與 DEMO 同源） ============ */
-const candles = QP.generateCandles(69, 240, 780);
-const perf = QP.calcPerformance(candles, QP.generateSignals(candles, 'ai'));
+/* ============ 真實歷史數據＋即時回測計算（與 DEMO 同源；離線以模擬備援） ============ */
+let candles = null;
 const fill = (key, text) => document.querySelectorAll(`[data-perf="${key}"]`).forEach((el) => { el.textContent = text; });
-fill('totalReturn', `+${perf.totalReturn.toFixed(1)}%`);
-fill('winRate', `${perf.winRate.toFixed(0)}%`);
-fill('sharpe', perf.sharpe.toFixed(2));
-fill('totalReturnPct', `+${perf.totalReturn.toFixed(2)}%`);
-fill('winRatePct', `${perf.winRate.toFixed(1)}%`);
-fill('maxDrawdownPct', `${perf.maxDrawdown.toFixed(2)}%`);
-fill('sharpe2', perf.sharpe.toFixed(2));
+
+(async function initData() {
+  let asOf = null;
+  let simulated = false;
+  try {
+    const res = await fetch('data/2330.json');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    candles = json.candles;
+    asOf = json.asOf;
+  } catch (err) {
+    candles = QP.generateCandles(69, 240, 1920);
+    simulated = true;
+  }
+  const perf = QP.calcPerformance(candles, QP.generateSignals(candles, 'ai'));
+  const sign = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+  fill('totalReturn', sign(perf.totalReturn));
+  fill('winRate', `${perf.winRate.toFixed(0)}%`);
+  fill('sharpe', perf.sharpe.toFixed(2));
+  fill('totalReturnPct', sign(perf.totalReturn));
+  fill('winRatePct', `${perf.winRate.toFixed(1)}%`);
+  fill('maxDrawdownPct', `${perf.maxDrawdown.toFixed(2)}%`);
+  fill('sharpe2', perf.sharpe.toFixed(2));
+  document.getElementById('hc-note').textContent = simulated ? '近一年 · 模擬備援' : `近一年 · 快照至 ${asOf}`;
+  document.getElementById('data-badge').textContent = simulated ? '技術展示 · 模擬備援數據' : '技術展示 · 真實歷史數據';
+  document.getElementById('perf-asof').textContent = simulated
+    ? '資料載入失敗，此為固定種子模擬備援數據；'
+    : `資料來源：Yahoo Finance 歷史快照（截至 ${asOf}，非即時報價）；`;
+  drawSpark();
+})();
 
 /* ============ Hero 走勢圖（SVG，由模擬收盤價繪製） ============ */
 function drawSpark() {
+  if (!candles) return;
   const svg = document.getElementById('hero-spark');
   const closes = candles.map((c) => c.close);
   const W = 640, H = 220, PAD = 14;
@@ -486,7 +509,6 @@ function drawSpark() {
     <polyline points="${pts.join(' ')}" fill="none" stroke="${brand}" stroke-width="2" stroke-linejoin="round"/>
     <circle cx="${x(closes.length - 1)}" cy="${y(closes[closes.length - 1])}" r="3.5" fill="${brand}"/>`;
 }
-drawSpark();
 
 /* ============ 滾動進場 ============ */
 const io = new IntersectionObserver((entries) => {
