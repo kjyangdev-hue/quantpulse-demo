@@ -295,7 +295,7 @@ footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
     <div class="card chart-card">
       <div class="card-head">
         <span class="card-title">台積電 2330（模擬）</span>
-        <span class="card-note">120 交易日 · 日 K</span>
+        <span class="card-note">240 交易日 · 日 K</span>
       </div>
       <div id="chart-main" role="img" aria-label="台積電 2330 模擬日 K 線圖，含 MA5、MA20、MA60 均線與成交量"></div>
       <div class="scan-overlay" id="scan-overlay">
@@ -355,7 +355,7 @@ footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
     </div>
     <div class="empty-state" id="signal-empty">
       <span class="glyph">[ awaiting_scan ]</span>
-      尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 120 個交易日的模擬行情
+      尚未執行分析——點擊「啟動 AI 策略分析」，AI 將掃描 240 個交易日的模擬行情
     </div>
   </section>
 </main>
@@ -365,7 +365,7 @@ footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
 <footer>
   <div class="wrap">
     <p class="disclaimer">
-      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（seed 42）演算法產生之<b>模擬數據</b>；
+      <b>模擬展示聲明：</b>本頁面為前端技術展示作品。K 線行情、AI 訊號與回測績效皆由固定種子（seed 69）演算法產生之<b>模擬數據</b>；
       「Pro 訂閱」為模擬結帳流程，<b>不會進行任何實際交易或請款</b>。頂部行情跑馬燈為 TradingView 第三方展示元件。
       本頁所有內容不構成投資建議。
     </p>
@@ -378,7 +378,7 @@ footer{margin-top:56px;border-top:1px solid var(--border);padding:26px 0 40px}
 <script>
 'use strict';
 /* ============ 資料初始化 ============ */
-const SEED = 42, DAYS = 120;
+const SEED = 69, DAYS = 240;
 const candles = QP.generateCandles(SEED, DAYS);
 const fmt = (n) => n.toLocaleString('zh-Hant-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -517,6 +517,7 @@ document.getElementById('btn-theme').addEventListener('click', () => {
   root.dataset.theme = next;
   try { localStorage.setItem('qp-theme', next); } catch (e) { /* 無痕模式 */ }
   renderChart();
+  if (window.applySignalOverlay) window.applySignalOverlay();
 });
 try {
   const saved = localStorage.getItem('qp-theme');
@@ -544,6 +545,159 @@ try {
   shell.querySelector('.tradingview-widget-container__widget').appendChild(s);
   setTimeout(() => { if (!shell.querySelector('iframe')) shell.classList.add('is-hidden'); }, 3500);
 })();
+
+/* ============ Toast ============ */
+function showToast(html, type = 'info') {
+  const rootEl = document.getElementById('toast-root');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = html;
+  rootEl.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 320);
+  }, 4200);
+}
+
+/* ============ AI 策略分析：idle → scanning → results ============ */
+const STRATEGY_NAMES = { 'ma-cross': '均線交叉', momentum: '動能突破', ai: 'AI 綜合 Alpha' };
+const state = { strategy: 'ma-cross', signals: null, perf: null, scanning: false };
+
+/* 策略選擇 */
+document.querySelectorAll('#strategy-select .strategy').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('locked')) {
+      if (window.openCheckout) window.openCheckout();
+      else showToast('「深度學習 Alpha」需升級 <b>Pro</b> 後解鎖');
+      return;
+    }
+    document.querySelectorAll('#strategy-select .strategy:not(.locked)').forEach((b) => {
+      b.classList.toggle('selected', b === btn);
+      b.setAttribute('aria-checked', String(b === btn));
+    });
+    state.strategy = btn.dataset.strategy;
+  });
+});
+
+/* 訊號疊加到 K 線（markPoint）；掛上 window 供主題切換後重新套用 */
+window.applySignalOverlay = applySignalOverlay;
+function applySignalOverlay() {
+  if (!chart || !state.signals) return;
+  const t = themeTokens();
+  const points = state.signals.map((s) => {
+    const buy = s.type === 'buy';
+    return {
+      coord: [s.index, buy ? candles[s.index].low * 0.985 : candles[s.index].high * 1.015],
+      symbol: 'arrow', symbolSize: 15, symbolRotate: buy ? 0 : 180,
+      itemStyle: { color: buy ? t.up : t.down, shadowBlur: 8, shadowColor: buy ? t.up : t.down },
+      label: {
+        show: true, formatter: buy ? '買' : '賣', position: buy ? 'bottom' : 'top',
+        color: buy ? t.up : t.down, fontSize: 11, fontWeight: 700, fontFamily: 'IBM Plex Mono',
+      },
+    };
+  });
+  chart.setOption({
+    dataZoom: [{ start: 0, end: 100 }],
+    series: [{ name: '日K', markPoint: { data: points, animation: true } }],
+  });
+}
+
+/* 數字滾動 */
+function countUp(el, target, decimals, unit) {
+  const dur = 850, t0 = performance.now();
+  const startText = parseFloat(el.textContent);
+  const from = Number.isFinite(startText) ? startText : 0;
+  function frame(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = from + (target - from) * eased;
+    el.innerHTML = `${val.toFixed(decimals)}${unit ? `<span class="unit">${unit}</span>` : ''}`;
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function updateStats(perf) {
+  const map = [
+    ['winRate', perf.winRate, 1, '%'],
+    ['totalReturn', perf.totalReturn, 2, '%'],
+    ['maxDrawdown', perf.maxDrawdown, 2, '%'],
+    ['sharpe', perf.sharpe, 2, ''],
+  ];
+  for (const [key, val, dec, unit] of map) {
+    const el = document.querySelector(`[data-stat="${key}"]`);
+    const tile = el.closest('.stat');
+    tile.classList.remove('pending');
+    tile.querySelector('.delta').textContent = `${STRATEGY_NAMES[state.strategy]} · ${perf.trades} 筆交易`;
+    countUp(el, val, dec, unit);
+  }
+}
+
+/* 訊號表（最新在上，逐列進場） */
+function fillSignalTable(signals) {
+  const body = document.getElementById('signal-table-body');
+  body.innerHTML = '';
+  document.getElementById('signal-empty').style.display = 'none';
+  document.getElementById('signal-count').textContent =
+    `策略：${STRATEGY_NAMES[state.strategy]} · 共 ${signals.length} 筆`;
+  [...signals].reverse().forEach((s, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'sig-row';
+    tr.style.animationDelay = `${i * 55}ms`;
+    tr.innerHTML = `
+      <td class="mono">${candles[s.index].date}</td>
+      <td>${STRATEGY_NAMES[state.strategy]}</td>
+      <td><span class="sig-chip ${s.type}">${s.type === 'buy' ? '▲ 買進' : '▼ 賣出'}</span></td>
+      <td class="mono">${fmt(s.price)}</td>
+      <td>${s.reason}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function showPerfPanel(signals, perf) {
+  const panel = document.getElementById('panel-perf');
+  panel.classList.add('show');
+  document.getElementById('perf-trades').textContent = `${perf.trades} 筆（${signals.length} 個訊號）`;
+  const latest = signals[signals.length - 1];
+  document.getElementById('perf-latest').textContent =
+    `${candles[latest.index].date} ${latest.type === 'buy' ? '買進' : '賣出'}`;
+}
+
+/* 主流程 */
+function runAiScan() {
+  if (state.scanning) return;
+  state.scanning = true;
+  const btn = document.getElementById('btn-ai-scan');
+  const overlay = document.getElementById('scan-overlay');
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.querySelector('.btn-label').textContent = 'AI 掃描模擬行情中…';
+  overlay.classList.add('active');
+
+  setTimeout(() => {
+    const signals = QP.generateSignals(candles, state.strategy);
+    const perf = QP.calcPerformance(candles, signals);
+    Object.assign(state, { signals, perf, scanning: false });
+
+    applySignalOverlay();
+    updateStats(perf);
+    fillSignalTable(signals);
+    showPerfPanel(signals, perf);
+
+    const latest = signals[signals.length - 1];
+    showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：偵測到 ${signals.length} 個訊號`);
+    setTimeout(() => showToast(
+      `最新訊號 <b>${candles[latest.index].date}</b>：<b>${latest.type === 'buy' ? '▲ 買進' : '▼ 賣出'} ${fmt(latest.price)}</b><br>${latest.reason}`,
+      latest.type,
+    ), 450);
+
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.querySelector('.btn-label').textContent = '重新執行 AI 分析';
+    overlay.classList.remove('active');
+  }, 1500);
+}
+document.getElementById('btn-ai-scan').addEventListener('click', runAiScan);
 </script>
 </body>
 </html>

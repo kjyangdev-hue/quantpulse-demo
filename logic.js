@@ -36,11 +36,11 @@ function generateCandles(seed, days) {
   const rand = mulberry32(seed);
   const dates = tradingDates(days);
   const candles = [];
-  let price = 980;
-  let vol = 0.016;
+  let price = 780;
+  let vol = 0.014;
   for (let i = 0; i < days; i++) {
-    vol = Math.min(0.03, Math.max(0.008, vol + (rand() - 0.5) * 0.004));
-    const ret = 0.0004 + (rand() + rand() - 1) * vol;
+    vol = Math.min(0.024, Math.max(0.007, vol + (rand() - 0.5) * 0.004));
+    const ret = 0.001 + (rand() + rand() - 1) * vol;
     const open = price;
     const close = Math.max(1, price * (1 + ret));
     const hi = Math.max(open, close);
