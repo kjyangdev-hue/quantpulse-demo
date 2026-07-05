@@ -171,7 +171,10 @@
     steps.forEach((s) => { s.hidden = s.dataset.step !== name; });
   }
   function openCheckout(plan) {
-    const p = Object.assign({}, DEFAULT_PLAN, plan || {});
+    const p = { ...DEFAULT_PLAN };
+    for (const [k, v] of Object.entries(plan || {})) {
+      if (v != null && v !== '') p[k] = v; // 未提供的欄位保留預設，避免 undefined 覆蓋
+    }
     $('plan-label').innerHTML = `${p.name}<br>${p.desc}`;
     $('plan-price').innerHTML = `${p.price}<small> ${p.period}</small>`;
     $('pay-label').textContent = `確認付款 ${p.price}`;
@@ -186,10 +189,10 @@
   }
   window.openCheckout = openCheckout;
   document.querySelectorAll('[data-open-checkout]').forEach((btn) => {
-    btn.addEventListener('click', () => openCheckout({
-      name: btn.dataset.planName, desc: btn.dataset.planDesc,
-      price: btn.dataset.planPrice, period: btn.dataset.planPeriod,
-    }));
+    btn.addEventListener('click', () => {
+      const d = btn.dataset;
+      openCheckout({ name: d.planName, desc: d.planDesc, price: d.planPrice, period: d.planPeriod });
+    });
   });
   $('checkout-close').addEventListener('click', closeCheckout);
   backdrop.addEventListener('click', (e) => { if (e.target === backdrop) closeCheckout(); });
@@ -230,7 +233,9 @@
     check($('cc-name'), $('cc-name').value.trim().length >= 2, '請輸入持卡人姓名');
     const card = QP.validateCard($('cc-number').value);
     check($('cc-number'), card.valid, card.error || '');
-    check($('cc-exp'), /^(0[1-9]|1[0-2])\/\d{2}$/.test($('cc-exp').value), '格式需為 MM/YY');
+    const expMatch = $('cc-exp').value.match(/^(0[1-9]|1[0-2])\/(\d{2})$/);
+    const expFuture = expMatch && new Date(2000 + Number(expMatch[2]), Number(expMatch[1]), 0, 23, 59, 59) >= new Date();
+    check($('cc-exp'), Boolean(expMatch) && expFuture, expMatch ? '卡片效期已過' : '格式需為 MM/YY');
     check($('cc-cvc'), /^\d{3}$/.test($('cc-cvc').value), '需為 3 碼數字');
     const gui = QP.validateGui($('inv-gui').value);
     check($('inv-gui'), gui.valid, gui.error || '');
