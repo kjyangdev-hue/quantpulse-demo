@@ -43,6 +43,13 @@ test.describe('官網', () => {
     await expect(frame.locator('#signal-table-body tr').first()).toBeVisible({ timeout: 10000 });
   });
 
+  test('品牌標誌可點回首頁', async ({ page }) => {
+    await page.goto('/app.html');
+    await page.locator('a.brand').click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('#decode-word')).toBeVisible();
+  });
+
   test('官網→儀表板動線', async ({ page }) => {
     await page.locator('.hero-cta a.btn-solid').click();
     await expect(page).toHaveURL(/app\.html$/);

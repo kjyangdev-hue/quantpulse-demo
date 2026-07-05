@@ -77,7 +77,8 @@ button{font-family:inherit;cursor:pointer}
   background:var(--bg);
 }
 .nav-inner{display:flex;align-items:center;gap:16px;height:52px}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-weight:600;font-size:.92rem;color:var(--ink);letter-spacing:.1em}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-mono);font-weight:600;font-size:.92rem;color:var(--ink);letter-spacing:.1em;transition:opacity .15s}
+.brand:hover{opacity:.8}
 .brand svg{flex:none}
 .brand small{font-weight:400;font-size:.66rem;color:var(--brand);letter-spacing:.18em}
 .brand,.market-badge,.btn-pro{white-space:nowrap}
@@ -321,10 +322,10 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <!-- 導覽 -->
 <nav class="nav">
   <div class="wrap nav-inner">
-    <span class="brand">
+    <a class="brand" href="./" target="_top" aria-label="回 QuantPulse 官網首頁">
       <svg width="22" height="22" viewBox="0 0 32 32" aria-hidden="true"><rect x="1" y="1" width="30" height="30" fill="none" stroke="var(--brand)" stroke-width="2"/><path d="M6 20 L12 14 L16 17 L26 8" stroke="var(--brand)" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="8" r="2.6" fill="var(--brand)"/></svg>
       QUANTPULSE <small>量化脈動</small>
-    </span>
+    </a>
     <a class="nav-home" href="./" target="_top">← 官網首頁</a>
     <span class="nav-spacer"></span>
     <span class="market-badge"><span class="dot"></span><span id="market-badge-text">數據載入中…</span></span>
