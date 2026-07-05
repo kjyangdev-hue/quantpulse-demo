@@ -94,9 +94,45 @@ button{font-family:inherit;cursor:pointer}
 .btn-ghost:active{transform:translateY(1px)}
 .nav .btn-solid{padding:8px 16px;font-size:.8rem}
 
-/* ============ 進場動畫 ============ */
-.js .reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease-out,transform .55s ease-out}
+/* ============ 捲動進度條 ============ */
+#scroll-progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--brand);z-index:400;pointer-events:none}
+
+/* ============ 進場／捲動動畫 ============ */
+.js .reveal{opacity:0;transform:translateY(24px);transition:opacity .65s cubic-bezier(.2,.7,.2,1),transform .65s cubic-bezier(.2,.7,.2,1)}
+.js .reveal[data-reveal="left"]{transform:translateX(-30px)}
+.js .reveal[data-reveal="right"]{transform:translateX(30px)}
+.js .reveal[data-reveal="zoom"]{transform:scale(.94) translateY(14px)}
 .js .reveal.in{opacity:1;transform:none}
+
+/* Hero 進場編排 */
+.js .hero-in{opacity:0;transform:translateY(20px);animation:heroIn .75s cubic-bezier(.2,.7,.2,1) forwards}
+@keyframes heroIn{to{opacity:1;transform:none}}
+
+/* Hero 掃光（磷光終端語彙） */
+.hero{position:relative;overflow:hidden}
+.hero::after{
+  content:"";position:absolute;top:0;bottom:0;width:150px;left:-170px;pointer-events:none;
+  background:linear-gradient(100deg,transparent,color-mix(in srgb,var(--brand) 8%,transparent) 50%,transparent);
+  animation:heroSweep 7s ease-in-out infinite;
+}
+@keyframes heroSweep{0%,55%{left:-170px}80%,100%{left:115%}}
+
+/* 走勢線尾磷光脈衝 */
+.spark-ring{animation:ringPulse 1.8s ease-out infinite;transform-origin:center;transform-box:fill-box}
+@keyframes ringPulse{0%{opacity:.7;transform:scale(.6)}100%{opacity:0;transform:scale(2.6)}}
+
+/* 自製行情跑馬燈（真實數據） */
+.metric-ticker{border-bottom:1px solid var(--border-strong);overflow:hidden;padding:9px 0;font-family:var(--font-mono);font-size:.74rem;color:var(--ink-2);letter-spacing:.05em}
+.metric-ticker .track{display:flex;gap:56px;width:max-content;animation:tickScroll 30s linear infinite;will-change:transform}
+.metric-ticker:hover .track{animation-play-state:paused}
+@keyframes tickScroll{to{transform:translateX(-50%)}}
+.metric-ticker b{color:var(--ink);font-weight:600}
+.metric-ticker .pos{color:var(--up)}
+.metric-ticker .tag{color:var(--brand)}
+
+/* CTA 箭頭微互動 */
+.btn-solid .arr,.btn-ghost .arr{display:inline-block;transition:transform .18s}
+.btn-solid:hover .arr,.btn-ghost:hover .arr{transform:translateX(4px)}
 
 /* ============ Hero ============ */
 .hero{padding:76px 0 96px}
@@ -217,6 +253,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
 </style>
 </head>
 <body>
+<div id="scroll-progress" aria-hidden="true"></div>
 
 <nav class="nav">
   <div class="wrap nav-inner">
@@ -239,16 +276,16 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
   <!-- Hero -->
   <header class="hero">
     <div class="wrap hero-grid">
-      <div class="reveal in">
-        <span class="sim-badge" id="data-badge">技術展示 · 數據載入中</span>
-        <h1>AI 量化訊號引擎，<br>把交易紀律變成<em>系統</em></h1>
-        <p class="lede">QuantPulse 將多策略回測、AI 買賣訊號與 TradingView 即時行情整合進單一儀表板，並內建訂閱金流與電子發票流程——從決策到收款，一條龍展示。</p>
-        <div class="hero-cta">
-          <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ]</a>
+      <div id="hero-copy">
+        <span class="sim-badge hero-in" id="data-badge" style="animation-delay:.05s">技術展示 · 數據載入中</span>
+        <h1 class="hero-in" style="animation-delay:.14s">AI 量化訊號引擎，<br>把交易紀律變成<em id="decode-word">系統</em></h1>
+        <p class="lede hero-in" style="animation-delay:.28s">QuantPulse 將多策略回測、AI 買賣訊號與 TradingView 即時行情整合進單一儀表板，並內建訂閱金流與電子發票流程——從決策到收款，一條龍展示。</p>
+        <div class="hero-cta hero-in" style="animation-delay:.42s">
+          <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ] <span class="arr">▸</span></a>
           <a class="btn-ghost" href="#pricing">查看方案</a>
         </div>
       </div>
-      <div class="hero-card reveal in" style="transition-delay:.12s">
+      <div id="hero-card-wrap"><div class="hero-card hero-in" style="animation-delay:.34s">
         <div class="hc-head">
           <span class="hc-title">台積電 2330</span>
           <span class="nav-spacer"></span>
@@ -260,11 +297,12 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
           <div class="hc-stat"><div class="l">勝率</div><div class="v" data-perf="winRate">--</div></div>
           <div class="hc-stat"><div class="l">夏普值</div><div class="v" data-perf="sharpe">--</div></div>
         </div>
-      </div>
+      </div></div>
     </div>
   </header>
 
-  <div class="wrap"><hr class="rule"></div>
+  <!-- 自製行情跑馬燈（真實快照數據，載入後填充） -->
+  <div class="metric-ticker" id="metric-ticker" hidden aria-hidden="true"><div class="track" id="metric-track"></div></div>
 
   <!-- 回測績效 -->
   <section class="block" id="performance">
@@ -291,25 +329,25 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
         <p>每一項功能都能在 DEMO 裡實際操作——不是概念圖，是能點的產品。</p>
       </div>
       <div class="features">
-        <div class="feature reveal">
+        <div class="feature reveal" data-reveal="left">
           <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg></div>
           <h3>AI 訊號引擎</h3>
           <p>均線交叉、動能突破、AI 綜合 Alpha 三種策略即時掃描，買賣訊號直接疊加在 K 線上，附判斷依據與績效統計。</p>
           <span class="f-tag">DEMO 可操作</span>
         </div>
-        <div class="feature reveal" style="transition-delay:.08s">
+        <div class="feature reveal" data-reveal="right" style="transition-delay:.08s">
           <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 17c4-8 6 2 9-6s5-2 9-8"/></svg></div>
           <h3>多標的回測</h3>
           <p>台積電 2330 與加權指數 TAIEX 一鍵切換，權益曲線與水下回撤、月報酬分佈、逐筆交易損益、Sortino／Calmar／Profit Factor 全套風險指標，訊號可匯出 CSV。</p>
           <span class="f-tag">DEMO 可操作</span>
         </div>
-        <div class="feature reveal" style="transition-delay:.16s">
+        <div class="feature reveal" data-reveal="left" style="transition-delay:.06s">
           <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="1"/><path d="M7 14l3-4 2 2 4-5"/></svg></div>
           <h3>TradingView 即時整合</h3>
           <p>Advanced Chart 完整互動圖表（RSI＋MACD）、技術面買賣儀表盤與行情跑馬燈——真實市場數據與模擬訊號並列對照。</p>
           <span class="f-tag">真實行情</span>
         </div>
-        <div class="feature reveal" style="transition-delay:.24s">
+        <div class="feature reveal" data-reveal="right" style="transition-delay:.14s">
           <div class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="1"/><path d="M2 10h20M6 15h4"/></svg></div>
           <h3>訂閱金流與電子發票</h3>
           <p>完整模擬結帳流程：卡號防呆與 Luhn 校驗、統編與手機條碼載具、付款進度與電子發票開立回饋——展示金流串接的前端全貌。</p>
@@ -322,7 +360,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
   <!-- 產品展示 -->
   <section class="block" style="padding-top:0">
     <div class="wrap">
-      <div class="showcase reveal">
+      <div class="showcase reveal" data-reveal="zoom">
         <figure>
           <img src="og.png" alt="QuantPulse 儀表板畫面：K 線圖、AI 買賣訊號、策略引擎與績效統計" loading="lazy" width="1200" height="630">
         </figure>
@@ -353,7 +391,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
           </ul>
           <a class="btn-ghost" href="app.html">開啟 DEMO</a>
         </div>
-        <div class="plan hot reveal" style="transition-delay:.08s">
+        <div class="plan hot reveal" data-reveal="zoom" style="transition-delay:.08s">
           <span class="p-flag">最受歡迎</span>
           <h3>Pro</h3>
           <div class="p-price">NT$ 1,290<small> /月</small></div>
@@ -475,14 +513,49 @@ const fill = (key, text) => document.querySelectorAll(`[data-perf="${key}"]`).fo
     simulated = true;
   }
   const perf = QP.calcPerformance(candles, QP.generateSignals(candles, 'ai'));
-  const sign = (v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
-  fill('totalReturn', sign(perf.totalReturn));
-  fill('winRate', `${perf.winRate.toFixed(0)}%`);
-  fill('sharpe', perf.sharpe.toFixed(2));
-  fill('totalReturnPct', sign(perf.totalReturn));
-  fill('winRatePct', `${perf.winRate.toFixed(1)}%`);
-  fill('maxDrawdownPct', `${perf.maxDrawdown.toFixed(2)}%`);
-  fill('sharpe2', perf.sharpe.toFixed(2));
+  const pfx = perf.totalReturn >= 0 ? '+' : '';
+
+  /* hero 卡數字：走勢畫完後滾動進場 */
+  setTimeout(() => {
+    countTo(document.querySelector('[data-perf="totalReturn"]'), perf.totalReturn, 2, pfx, '%');
+    countTo(document.querySelector('[data-perf="winRate"]'), perf.winRate, 0, '', '%');
+    countTo(document.querySelector('[data-perf="sharpe"]'), perf.sharpe, 2, '', '');
+  }, reduceMotion ? 0 : 900);
+
+  /* 績效帶：捲動進入視口才滾動數字 */
+  const band = document.querySelector('.perf-band');
+  const bandIO = new IntersectionObserver((entries) => {
+    if (!entries[0].isIntersecting) return;
+    bandIO.disconnect();
+    countTo(document.querySelector('[data-perf="totalReturnPct"]'), perf.totalReturn, 2, pfx, '%');
+    countTo(document.querySelector('[data-perf="winRatePct"]'), perf.winRate, 1, '', '%');
+    countTo(document.querySelector('[data-perf="maxDrawdownPct"]'), perf.maxDrawdown, 2, '', '%');
+    countTo(document.querySelector('[data-perf="sharpe2"]'), perf.sharpe, 2, '', '');
+  }, { threshold: 0.4 });
+  bandIO.observe(band);
+
+  /* 自製行情跑馬燈（真實數據；TAIEX 快照載入失敗則略過該段） */
+  try {
+    const last = candles[candles.length - 1];
+    const items = [
+      `<span class="tag">2330</span> 收盤 <b>${last.close.toLocaleString('zh-Hant-TW')}</b>`,
+      `AI 綜合 Alpha 近一年 <b class="pos">${pfx}${perf.totalReturn.toFixed(2)}%</b>`,
+      `勝率 <b>${perf.winRate.toFixed(1)}%</b>`,
+      `Sharpe <b>${perf.sharpe.toFixed(2)}</b>`,
+      `最大回撤 <b>${perf.maxDrawdown.toFixed(2)}%</b>`,
+    ];
+    if (!simulated) {
+      const tj = await (await fetch('data/taiex.json')).json();
+      const tLast = tj.candles[tj.candles.length - 1];
+      const tPerf = QP.calcPerformance(tj.candles, QP.generateSignals(tj.candles, 'ai'));
+      items.push(`<span class="tag">TAIEX</span> 收盤 <b>${tLast.close.toLocaleString('zh-Hant-TW')}</b>`);
+      items.push(`TAIEX AI 回測 <b class="pos">${tPerf.totalReturn >= 0 ? '+' : ''}${tPerf.totalReturn.toFixed(2)}%</b>`);
+    }
+    items.push(simulated ? '模擬備援數據' : `歷史快照至 ${asOf} · 非即時`);
+    const half = items.map((i) => `<span>${i}</span>`).join('');
+    document.getElementById('metric-track').innerHTML = half + half; /* 兩份內容做無縫循環 */
+    document.getElementById('metric-ticker').hidden = false;
+  } catch (err) { /* 跑馬燈屬加分項，失敗不影響主體 */ }
   document.getElementById('hc-note').textContent = simulated ? '近一年 · 模擬備援' : `近一年 · 快照至 ${asOf}`;
   document.getElementById('data-badge').textContent = simulated ? '技術展示 · 模擬備援數據' : '技術展示 · 真實歷史數據';
   document.getElementById('perf-asof').textContent = simulated
@@ -503,11 +576,24 @@ function drawSpark() {
   const pts = closes.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
   const brand = getComputedStyle(root).getPropertyValue('--brand').trim();
   const border = getComputedStyle(root).getPropertyValue('--border').trim();
+  const endX = x(closes.length - 1);
+  const endY = y(closes[closes.length - 1]);
   svg.innerHTML = `
     <line x1="${PAD}" y1="${H - PAD}" x2="${W - PAD}" y2="${H - PAD}" stroke="${border}" stroke-width="1"/>
     <polyline points="${pts.join(' ')} ${W - PAD},${H - PAD} ${PAD},${H - PAD}" fill="${brand}" opacity=".08" stroke="none"/>
-    <polyline points="${pts.join(' ')}" fill="none" stroke="${brand}" stroke-width="2" stroke-linejoin="round"/>
-    <circle cx="${x(closes.length - 1)}" cy="${y(closes[closes.length - 1])}" r="3.5" fill="${brand}"/>`;
+    <polyline class="spark-line" points="${pts.join(' ')}" fill="none" stroke="${brand}" stroke-width="2" stroke-linejoin="round"/>
+    <circle class="spark-ring" cx="${endX}" cy="${endY}" r="4" fill="none" stroke="${brand}" stroke-width="1.5"/>
+    <circle cx="${endX}" cy="${endY}" r="3.5" fill="${brand}"/>`;
+  /* 走勢線自我描繪 */
+  if (!reduceMotion) {
+    const line = svg.querySelector('.spark-line');
+    const len = line.getTotalLength();
+    line.style.strokeDasharray = len;
+    line.style.strokeDashoffset = len;
+    line.getBoundingClientRect(); /* 強制 reflow 讓 transition 生效 */
+    line.style.transition = 'stroke-dashoffset 1.6s cubic-bezier(.3,.6,.3,1)';
+    line.style.strokeDashoffset = '0';
+  }
 }
 
 /* ============ 滾動進場 ============ */
@@ -517,6 +603,63 @@ const io = new IntersectionObserver((entries) => {
   });
 }, { threshold: 0.12 });
 document.querySelectorAll('.reveal:not(.in)').forEach((el) => io.observe(el));
+
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============ 捲動進度條 ============ */
+const progressBar = document.getElementById('scroll-progress');
+addEventListener('scroll', () => {
+  const h = document.documentElement;
+  progressBar.style.width = `${(h.scrollTop / (h.scrollHeight - h.clientHeight)) * 100}%`;
+}, { passive: true });
+
+/* ============ Hero 視差（transform-only，rAF 節流） ============ */
+(function heroParallax() {
+  if (reduceMotion) return;
+  const card = document.getElementById('hero-card-wrap');
+  const copy = document.getElementById('hero-copy');
+  let ticking = false;
+  addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = Math.min(scrollY, 640);
+      card.style.transform = `translateY(${(y * -0.09).toFixed(1)}px)`;
+      copy.style.transform = `translateY(${(y * -0.035).toFixed(1)}px)`;
+      ticking = false;
+    });
+  }, { passive: true });
+})();
+
+/* ============ 標題終端解碼效果 ============ */
+(function decodeWord() {
+  const el = document.getElementById('decode-word');
+  if (!el || reduceMotion) return;
+  const finalText = el.textContent;
+  const glyphs = '01$#%+▮▯▲▼╱╲┤├▍';
+  let frame = 0;
+  const total = 20;
+  const timer = setInterval(() => {
+    frame++;
+    el.textContent = [...finalText].map((ch, i) =>
+      (frame / total) > ((i + 1) / finalText.length) ? ch : glyphs[Math.floor(Math.random() * glyphs.length)]
+    ).join('');
+    if (frame >= total) { el.textContent = finalText; clearInterval(timer); }
+  }, 55);
+})();
+
+/* ============ 數字滾動 ============ */
+function countTo(el, target, decimals, prefix, suffix) {
+  if (reduceMotion) { el.textContent = `${prefix}${target.toFixed(decimals)}${suffix}`; return; }
+  const t0 = performance.now();
+  const dur = 950;
+  (function frame(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = `${prefix}${(target * eased).toFixed(decimals)}${suffix}`;
+    if (p < 1) requestAnimationFrame(frame);
+  })(t0);
+}
 </script>
 <script src="checkout.js"></script>
 </body>
