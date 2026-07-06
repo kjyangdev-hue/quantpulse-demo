@@ -68,6 +68,14 @@ test.describe('儀表板', () => {
     expect(download.suggestedFilename()).toMatch(/^quantpulse-signals-.+\.csv$/);
   });
 
+  test('即時技術面隨標的切換對照代號', async ({ page }) => {
+    await expect(page.locator('#tv-ta-label')).toHaveText('台積電 ADR');
+    await page.locator('#symbol-select').selectOption('nvda');
+    await expect(page.locator('#tv-ta-label')).toHaveText('NVIDIA', { timeout: 8000 });
+    await page.locator('#symbol-select').selectOption('btc');
+    await expect(page.locator('#tv-ta-label')).toHaveText('BTC/USD', { timeout: 8000 });
+  });
+
   test('TradingView 即時分頁（第三方，軟性驗證）', async ({ page }) => {
     await page.locator('.chart-tab[data-tab="tv"]').click();
     await expect(page.locator('#tv-chart')).toBeVisible();
