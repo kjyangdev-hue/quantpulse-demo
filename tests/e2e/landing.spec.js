@@ -43,13 +43,13 @@ test.describe('官網', () => {
     await expect(frame.locator('#signal-table-body tr').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('Hero 十字準星：走勢卡上回讀日期與價格', async ({ page }) => {
-    await page.waitForTimeout(1500);
-    const spark = page.locator('#hero-spark');
-    await spark.hover({ position: { x: 380, y: 110 } });
-    await expect(page.locator('#cursor-cross')).toHaveClass(/on/);
-    await expect(page.locator('#cx-tag')).toBeVisible();
-    await expect(page.locator('#cx-tag')).toHaveText(/^\d{4}-\d{2}-\d{2} · [\d,.]+$/);
+  test('滑鼠光暈跟隨游標', async ({ page }) => {
+    await page.mouse.move(400, 300);
+    await page.mouse.move(640, 420);
+    await expect(page.locator('#cursor-glow')).toHaveClass(/on/);
+    await expect
+      .poll(async () => page.locator('#cursor-glow').evaluate((el) => el.style.transform))
+      .toContain('translate');
   });
 
   test('品牌標誌可點回首頁', async ({ page }) => {
