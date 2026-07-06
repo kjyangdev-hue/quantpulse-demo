@@ -531,7 +531,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
   </div>
 </footer>
 
-<script src="logic.js?v=20260706a"></script>
+<script src="logic.js?v=20260706b"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
@@ -575,9 +575,13 @@ async function loadSymbolData(key) {
   if (DATA_CACHE[key]) return DATA_CACHE[key];
   const cfg = SYMBOLS[key];
   try {
-    const res = await fetch(cfg.file);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 8000); // 逾時保護：避免掛起的請求卡死載入
+    const res = await fetch(cfg.file, { signal: ctrl.signal });
+    clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
+    if (!Array.isArray(json.candles) || json.candles.length < 2) throw new Error('資料結構異常'); // 驗證形狀，壞資料退備援
     DATA_CACHE[key] = { candles: json.candles, asOf: json.asOf, simulated: false };
   } catch (err) {
     DATA_CACHE[key] = { candles: QP.generateCandles(cfg.fallbackSeed, 240, cfg.fallbackStart), asOf: null, simulated: true };
@@ -942,6 +946,12 @@ function fillSignalTable(signals) {
   document.getElementById('signal-empty').style.display = 'none';
   document.getElementById('signal-count').textContent =
     `策略：${STRATEGY_NAMES[state.strategy]} · 共 ${signals.length} 筆`;
+  if (!signals.length) { // 該策略在此區間無買賣訊號：顯示說明而非全空
+    const empty = document.getElementById('signal-empty');
+    empty.style.display = '';
+    empty.textContent = '此區間該策略未產生買賣訊號，可換一個策略或標的再試';
+    return;
+  }
   [...signals].reverse().forEach((s, i) => {
     const tr = document.createElement('tr');
     tr.className = 'sig-row';
@@ -961,14 +971,25 @@ function showPerfPanel(signals, perf) {
   panel.classList.add('show');
   document.getElementById('perf-trades').textContent = `${perf.trades} 筆（${signals.length} 個訊號）`;
   const latest = signals[signals.length - 1];
-  document.getElementById('perf-latest').textContent =
-    `${candles[latest.index].date} ${latest.type === 'buy' ? '買進' : '賣出'}`;
+  document.getElementById('perf-latest').textContent = latest
+    ? `${candles[latest.index].date} ${latest.type === 'buy' ? '買進' : '賣出'}`
+    : '—';
 }
 
 /* 主流程 */
+let scanGen = 0;
+function finishScanUI() {
+  const btn = document.getElementById('btn-ai-scan');
+  btn.disabled = false;
+  btn.classList.remove('loading');
+  document.getElementById('scan-overlay').classList.remove('active');
+  state.scanning = false;
+}
 function runAiScan() {
   if (state.scanning) return;
+  if (!candles) return; // 資料尚未載入，忽略點擊
   state.scanning = true;
+  const gen = ++scanGen; // 世代：切標的/策略會令此次掃描失效
   if (window.showChartTab) window.showChartTab('sim'); // 掃描結果畫在模擬圖上
   const btn = document.getElementById('btn-ai-scan');
   const overlay = document.getElementById('scan-overlay');
@@ -978,6 +999,7 @@ function runAiScan() {
   overlay.classList.add('active');
 
   setTimeout(() => {
+    if (gen !== scanGen) return; // 已被 reset 或新掃描取代，放棄這次結果
     const signals = QP.generateSignals(candles, state.strategy);
     const perf = QP.calcPerformance(candles, signals);
     Object.assign(state, { signals, perf, scanning: false });
@@ -987,20 +1009,22 @@ function runAiScan() {
     fillSignalTable(signals);
     fillTradeTable();
     showPerfPanel(signals, perf);
-    document.getElementById('btn-export-csv').hidden = false;
+    document.getElementById('btn-export-csv').hidden = signals.length === 0;
     if (currentPane === 'analytics') renderAnalytics();
 
-    const latest = signals[signals.length - 1];
-    showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：偵測到 ${signals.length} 個訊號`);
-    setTimeout(() => showToast(
-      `最新訊號 <b>${candles[latest.index].date}</b>：<b>${latest.type === 'buy' ? '▲ 買進' : '▼ 賣出'} ${fmt(latest.price)}</b><br>${latest.reason}`,
-      latest.type,
-    ), 450);
+    if (signals.length) {
+      const latest = signals[signals.length - 1];
+      showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：偵測到 ${signals.length} 個訊號`);
+      setTimeout(() => { if (gen === scanGen) showToast(
+        `最新訊號 <b>${candles[latest.index].date}</b>：<b>${latest.type === 'buy' ? '▲ 買進' : '▼ 賣出'} ${fmt(latest.price)}</b><br>${latest.reason}`,
+        latest.type,
+      ); }, 450);
+    } else {
+      showToast(`<b>AI 分析完成</b>｜${STRATEGY_NAMES[state.strategy]}：此區間未產生買賣訊號`);
+    }
 
-    btn.disabled = false;
-    btn.classList.remove('loading');
     btn.querySelector('.btn-label').textContent = '重新執行 AI 分析';
-    overlay.classList.remove('active');
+    finishScanUI();
   }, 1500);
 }
 document.getElementById('btn-ai-scan').addEventListener('click', runAiScan);
@@ -1221,12 +1245,16 @@ document.getElementById('btn-export-csv').addEventListener('click', () => {
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = `quantpulse-signals-${state.strategy}.csv`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000); // 延遲撤銷，避免非同步下載（Firefox）拿到失效 URL
 });
 
+/* 標的切換：世代 token 防止慢的舊 fetch 覆蓋新選擇 */
+let symbolGen = 0;
 document.getElementById('symbol-select').addEventListener('change', async (e) => {
   const key = e.target.value;
+  const gen = ++symbolGen;
   await loadSymbolData(key);
+  if (gen !== symbolGen) return; // 期間又切了，放棄這次套用
   resetAnalysis();
   applySymbol(key);
   if (window.showChartTab) window.showChartTab('sim');
@@ -1234,12 +1262,14 @@ document.getElementById('symbol-select').addEventListener('change', async (e) =>
 
 /* 初始載入 */
 (async function initData() {
+  const gen = symbolGen;
   await loadSymbolData('2330');
+  if (gen !== symbolGen) return; // 初始載入期間使用者已切換標的，不覆蓋
   applySymbol('2330');
 })();
 
 
 </script>
-<script src="checkout.js?v=20260706a"></script>
+<script src="checkout.js?v=20260706b"></script>
 </body>
 </html>

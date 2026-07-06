@@ -60,8 +60,19 @@
 .m-processing .big-spin{
   width:52px;height:52px;margin:0 auto 18px;border-radius:50%;
   border:3px solid color-mix(in srgb,var(--brand) 20%,transparent);border-top-color:var(--brand);
-  animation:spin .8s linear infinite;
+  animation:m-spin .8s linear infinite;
 }
+@keyframes m-spin{to{transform:rotate(360deg)}}
+/* 結帳按鈕：自帶樣式，不依賴宿主頁 .btn-scan */
+.m-btn{
+  width:100%;border:1px solid var(--brand);border-radius:var(--radius);padding:13px 16px;
+  font-family:var(--font-mono);font-size:.95rem;font-weight:600;letter-spacing:.04em;white-space:nowrap;
+  color:var(--brand-ink);background:var(--brand);cursor:pointer;
+  transition:background-color .12s,color .12s;
+}
+.m-btn:hover{background:transparent;color:var(--brand)}
+.m-btn:active{transform:translateY(1px)}
+.m-btn:disabled{cursor:wait;opacity:.55}
 .m-processing h3{font-size:1.05rem;font-weight:700;margin-bottom:6px}
 .m-processing p{font-size:.8rem;color:var(--ink-3);font-family:var(--font-mono)}
 /* success */
@@ -124,7 +135,7 @@
           <input id="inv-carrier" placeholder="/ABC1234" maxlength="8">
           <span class="err"></span>
         </label>
-        <button type="submit" class="btn-scan m-pay">[ <span class="btn-label" id="pay-label">確認付款 NT$ 1,290</span> ]</button>
+        <button type="submit" class="m-btn m-pay">[ <span class="btn-label" id="pay-label">確認付款 NT$ 1,290</span> ]</button>
         <p class="m-secure"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-1px" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> 此為模擬結帳視窗，不會進行任何實際請款</p>
       </form>
     </section>
@@ -148,7 +159,7 @@
         <div>金額 <b id="inv-amount">NT$ 1,290</b></div>
       </div>
       <p class="sub-note" id="checkout-success-note">本視窗為前端展示，未進行任何實際交易</p>
-      <button class="btn-scan m-done" id="checkout-done">[ <span class="btn-label">開始使用 Pro</span> ]</button>
+      <button class="m-btn m-done" id="checkout-done">[ <span class="btn-label">開始使用 Pro</span> ]</button>
     </section>
   </div>
 </div>
@@ -170,7 +181,12 @@
   function goStep(name) {
     steps.forEach((s) => { s.hidden = s.dataset.step !== name; });
   }
+  let subscribed = false;
   function openCheckout(plan) {
+    if (subscribed) { // 已訂閱：不再重複結帳，只提示
+      if (window.showToast) window.showToast('<b>已是 Pro 訂閱</b>：全部 AI 策略皆已解鎖');
+      return;
+    }
     const p = { ...DEFAULT_PLAN };
     for (const [k, v] of Object.entries(plan || {})) {
       if (v != null && v !== '') p[k] = v; // 未提供的欄位保留預設，避免 undefined 覆蓋
@@ -179,6 +195,8 @@
     $('plan-price').innerHTML = `${p.price}<small> ${p.period}</small>`;
     $('pay-label').textContent = `確認付款 ${p.price}`;
     $('inv-amount').textContent = p.price;
+    form.reset(); // 清空上次輸入（含敏感卡號），避免共用裝置殘留
+    backdrop.querySelectorAll('label.invalid').forEach((l) => l.classList.remove('invalid'));
     goStep('form');
     backdrop.classList.add('show');
     setTimeout(() => $('cc-name').focus(), 260);
@@ -256,7 +274,13 @@
       const carrier = $('inv-carrier').value.trim();
       $('inv-method').textContent = gui ? `統編 ${gui}` : (carrier ? `載具 ${carrier}` : '會員載具（雲端發票）');
       processing = false;
+      subscribed = true; // 標記已訂閱，避免重複結帳
       goStep('success');
+      form.reset(); // 成功後也清空敏感輸入
+      /* 隱藏所有升級入口 */
+      document.querySelectorAll('[data-open-checkout]').forEach((b) => { b.hidden = true; });
+      const hint = document.getElementById('btn-upgrade-2');
+      if (hint && hint.parentElement) hint.parentElement.hidden = true;
       if (typeof window.onCheckoutSuccess === 'function') window.onCheckoutSuccess();
     }, 2200);
   });
