@@ -452,7 +452,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
         <button class="btn-upgrade-link" id="btn-upgrade-2" data-open-checkout><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0"/></svg>升級 Pro 解鎖全部 AI 策略</button>
       </div>
       <div id="tv-ta-section">
-        <div class="panel-title" style="border-top:1px solid var(--border)">即時技術面（TradingView）</div>
+        <div class="panel-title" style="border-top:1px solid var(--border)">即時技術面（TradingView · <span id="tv-ta-label">台積電 ADR</span>）</div>
         <div id="tv-ta" aria-label="TradingView 台積電 ADR 即時技術面分析儀表"></div>
         <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
       </div>
@@ -558,13 +558,15 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 
 /* ============ 資料初始化：真實歷史快照（Yahoo Finance），離線以模擬備援 ============ */
 const SYMBOLS = {
-  '2330': { label: '台積電 2330', file: 'data/2330.json', fallbackSeed: 69, fallbackStart: 1920 },
-  'taiex': { label: '加權指數 TAIEX', file: 'data/taiex.json', fallbackSeed: 99, fallbackStart: 33000 },
-  '0050': { label: '元大台灣50 0050', file: 'data/0050.json', fallbackSeed: 7, fallbackStart: 85 },
-  '2317': { label: '鴻海 2317', file: 'data/2317.json', fallbackSeed: 23, fallbackStart: 190 },
-  'nvda': { label: 'NVIDIA（USD）', file: 'data/nvda.json', fallbackSeed: 88, fallbackStart: 150 },
-  'btc': { label: 'Bitcoin（USD）', file: 'data/btc.json', fallbackSeed: 123, fallbackStart: 50000 },
+  /* tv：TradingView 免費元件無台股數據源，採對照標的（ADR/GDR/台灣市場 ETF） */
+  '2330': { label: '台積電 2330', file: 'data/2330.json', fallbackSeed: 69, fallbackStart: 1920, tv: 'NYSE:TSM', tvLabel: '台積電 ADR' },
+  'taiex': { label: '加權指數 TAIEX', file: 'data/taiex.json', fallbackSeed: 99, fallbackStart: 33000, tv: 'AMEX:EWT', tvLabel: '台灣市場 ETF' },
+  '0050': { label: '元大台灣50 0050', file: 'data/0050.json', fallbackSeed: 7, fallbackStart: 85, tv: 'AMEX:EWT', tvLabel: '台灣市場 ETF' },
+  '2317': { label: '鴻海 2317', file: 'data/2317.json', fallbackSeed: 23, fallbackStart: 190, tv: 'OTC:HNHPF', tvLabel: '鴻海 GDR' },
+  'nvda': { label: 'NVIDIA（USD）', file: 'data/nvda.json', fallbackSeed: 88, fallbackStart: 150, tv: 'NASDAQ:NVDA', tvLabel: 'NVIDIA' },
+  'btc': { label: 'Bitcoin（USD）', file: 'data/btc.json', fallbackSeed: 123, fallbackStart: 50000, tv: 'BITSTAMP:BTCUSD', tvLabel: 'BTC/USD' },
 };
+let currentSymbolKey = '2330';
 let candles = null;
 let dataMeta = null;
 const DATA_CACHE = {};
@@ -585,11 +587,15 @@ async function loadSymbolData(key) {
 
 /* 套用已載入的標的資料並更新所有資料標示 */
 function applySymbol(key) {
+  currentSymbolKey = key;
   const d = DATA_CACHE[key];
   candles = d.candles;
   dataMeta = d;
   renderChart();
   updatePriceStat();
+  document.getElementById('tv-ta-label').textContent = SYMBOLS[key].tvLabel;
+  buildTvTa();
+  if (tvChartInited) buildTvChart();
   document.getElementById('data-note').textContent = d.simulated
     ? `${candles.length} 交易日 · 模擬備援數據`
     : `${candles.length} 交易日 · 快照至 ${d.asOf}`;
@@ -775,7 +781,6 @@ function buildTicker() {
 buildTicker();
 
 /* ============ TradingView 進階嵌入：Advanced Chart（懶載入）＋技術面儀表 ============ */
-const TV_SYMBOL = 'NYSE:TSM';
 let tvChartInited = false;
 
 function tvEmbed(container, widgetFile, config) {
@@ -789,7 +794,7 @@ function tvEmbed(container, widgetFile, config) {
 
 function buildTvChart() {
   tvEmbed(document.getElementById('tv-chart'), 'advanced-chart', {
-    autosize: true, symbol: TV_SYMBOL, interval: 'D', timezone: 'Asia/Taipei',
+    autosize: true, symbol: SYMBOLS[currentSymbolKey].tv, interval: 'D', timezone: 'Asia/Taipei',
     theme: root.dataset.theme === 'light' ? 'light' : 'dark', style: '1', locale: 'zh_TW',
     studies: ['STD;RSI', 'STD;MACD'], allow_symbol_change: true, hide_volume: false,
     support_host: 'https://www.tradingview.com',
@@ -802,7 +807,7 @@ function buildTvTa() {
   const el = document.getElementById('tv-ta');
   section.classList.remove('loaded');
   tvEmbed(el, 'technical-analysis', {
-    interval: '1D', symbol: TV_SYMBOL, width: '100%', height: 360,
+    interval: '1D', symbol: SYMBOLS[currentSymbolKey].tv, width: '100%', height: 360,
     colorTheme: root.dataset.theme === 'light' ? 'light' : 'dark',
     isTransparent: true, showIntervalTabs: false, disableInterval: false, locale: 'zh_TW',
   });
@@ -822,7 +827,6 @@ function buildTvTa() {
     }
   }, 400);
 }
-buildTvTa();
 
 /* 圖表分頁切換 */
 window.showChartTab = showChartTab;
