@@ -127,6 +127,7 @@ button{font-family:inherit;cursor:pointer}
 .hero{padding:36px 0 4px}
 .hero h1{font-family:var(--font-display);font-weight:900;font-size:clamp(1.65rem,3.4vw,2.45rem);letter-spacing:.01em;margin:4px 0 2px;line-height:1.15}
 .hero .sub{color:var(--ink-2);font-size:.92rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hero-disclaimer{margin-top:9px;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.1em;color:var(--ink-3);border:1px solid var(--border);border-radius:var(--radius);padding:3px 9px;display:inline-block}
 .sim-badge{font-family:var(--font-mono);font-size:.66rem;color:var(--amber);border:1px solid var(--amber);border-radius:var(--radius);padding:2px 8px;letter-spacing:.08em}
 
 /* ============ 統計列（帳票式：單一容器＋hairline 分欄） ============ */
@@ -366,6 +367,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       策略回測與買賣訊號引擎 · 標的：台積電 2330
       <span class="sim-badge" id="data-badge">數據載入中…</span>
     </p>
+    <p class="hero-disclaimer">歷史回測 · 非即時訊號 · 非投資建議</p>
   </header>
 
   <!-- 統計卡列 -->
@@ -461,7 +463,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
       <div id="tv-ta-section">
         <div class="panel-title" style="border-top:1px solid var(--border)">即時技術面（TradingView · <span id="tv-ta-label">台積電 ADR</span>）</div>
         <div id="tv-ta" aria-label="TradingView 台積電 ADR 即時技術面分析儀表"></div>
-        <p class="ta-note">真實市場數據，與上方模擬 AI 訊號對照</p>
+        <p class="ta-note">TradingView 第三方技術面圖表 · 僅供 UI 整合展示，非投資建議</p>
       </div>
     </aside>
 
