@@ -109,17 +109,13 @@ button{font-family:inherit;cursor:pointer}
 .js .hero-in{opacity:0;transform:translateY(20px);animation:heroIn .75s cubic-bezier(.2,.7,.2,1) forwards}
 @keyframes heroIn{to{opacity:1;transform:none}}
 
-/* Hero 十字準星（圖表語彙的游標特效；桌面精準指標限定） */
-.cursor-cross{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .2s;z-index:3}
-.cursor-cross.on{opacity:1}
-.cx-v{position:absolute;top:0;bottom:0;left:0;width:1px;background:color-mix(in srgb,var(--brand) 38%,transparent);will-change:transform}
-.cx-h{position:absolute;left:0;right:0;top:0;height:1px;background:color-mix(in srgb,var(--brand) 38%,transparent);will-change:transform}
-.cx-dot{position:absolute;top:-2.5px;left:-2.5px;width:5px;height:5px;background:var(--brand);will-change:transform}
-.cx-tag{
-  position:absolute;top:0;left:0;font-family:var(--font-mono);font-size:.64rem;letter-spacing:.04em;
-  color:var(--brand);background:var(--bg);border:1px solid var(--border-strong);padding:2px 8px;
-  white-space:nowrap;will-change:transform;
+/* 滑鼠光暈（全站、lerp 平滑跟隨；桌面精準指標限定） */
+#cursor-glow{
+  position:fixed;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;
+  pointer-events:none;z-index:1;opacity:0;transition:opacity .35s;will-change:transform;
+  background:radial-gradient(circle,color-mix(in srgb,var(--brand) 11%,transparent) 0%,color-mix(in srgb,var(--brand) 4%,transparent) 38%,transparent 64%);
 }
+#cursor-glow.on{opacity:1}
 
 /* Hero 掃光（磷光終端語彙） */
 .hero{position:relative;overflow:hidden}
@@ -278,6 +274,7 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
 </head>
 <body>
 <div id="scroll-progress" aria-hidden="true"></div>
+<div id="cursor-glow" aria-hidden="true"></div>
 
 <nav class="nav">
   <div class="wrap nav-inner">
@@ -308,12 +305,6 @@ footer{margin-top:var(--space-8);border-top:1px solid var(--border-strong);paddi
           <a class="btn-solid" href="app.html">[ 開啟互動 DEMO ] <span class="arr">▸</span></a>
           <a class="btn-ghost" href="#pricing">查看方案</a>
         </div>
-      </div>
-      <div class="cursor-cross" id="cursor-cross" aria-hidden="true">
-        <span class="cx-v" id="cx-v"></span>
-        <span class="cx-h" id="cx-h"></span>
-        <span class="cx-dot" id="cx-dot"></span>
-        <span class="cx-tag" id="cx-tag" hidden></span>
       </div>
       <div id="hero-card-wrap"><div class="hero-card hero-in" style="animation-delay:.34s">
         <div class="hc-head">
@@ -678,45 +669,25 @@ addEventListener('scroll', () => {
   }, { passive: true });
 })();
 
-/* ============ Hero 十字準星：走勢卡上回讀真實日期與收盤價 ============ */
-(function heroCrosshair() {
-  if (reduceMotion || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  const hero = document.querySelector('.hero');
-  const cross = document.getElementById('cursor-cross');
-  const v = document.getElementById('cx-v');
-  const h = document.getElementById('cx-h');
-  const dot = document.getElementById('cx-dot');
-  const tag = document.getElementById('cx-tag');
-  let raf = false;
-  hero.addEventListener('mousemove', (e) => {
-    if (raf) return;
-    raf = true;
-    requestAnimationFrame(() => {
-      const r = hero.getBoundingClientRect();
-      const x = e.clientX - r.left;
-      const y = e.clientY - r.top;
-      v.style.transform = `translateX(${x}px)`;
-      h.style.transform = `translateY(${y}px)`;
-      dot.style.transform = `translate(${x}px, ${y}px)`;
-      const spark = document.getElementById('hero-spark');
-      const sr = spark.getBoundingClientRect();
-      const inSpark = candles && e.clientX >= sr.left && e.clientX <= sr.right && e.clientY >= sr.top && e.clientY <= sr.bottom;
-      if (inSpark) {
-        const ratio = (e.clientX - sr.left) / sr.width;
-        const i = Math.min(candles.length - 1, Math.max(0, Math.round(ratio * (candles.length - 1))));
-        tag.textContent = `${candles[i].date} · ${candles[i].close.toLocaleString('zh-Hant-TW')}`;
-        tag.hidden = false;
-        const flipX = x > r.width - 220;
-        const flipY = y > r.height - 44;
-        tag.style.transform = `translate(${x + (flipX ? -14 : 14)}px, ${y + (flipY ? -34 : 14)}px)${flipX ? ' translateX(-100%)' : ''}`;
-      } else {
-        tag.hidden = true;
-      }
-      raf = false;
-    });
-  });
-  hero.addEventListener('mouseenter', () => cross.classList.add('on'));
-  hero.addEventListener('mouseleave', () => { cross.classList.remove('on'); tag.hidden = true; });
+/* ============ 滑鼠光暈：lerp 平滑跟隨 ============ */
+(function cursorGlow() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const glow = document.getElementById('cursor-glow');
+  let tx = innerWidth / 2, ty = innerHeight / 2, cx = tx, cy = ty, running = false;
+  function tick() {
+    cx += (tx - cx) * 0.16;
+    cy += (ty - cy) * 0.16;
+    glow.style.transform = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px)`;
+    if (Math.abs(tx - cx) > 0.3 || Math.abs(ty - cy) > 0.3) requestAnimationFrame(tick);
+    else running = false;
+  }
+  addEventListener('mousemove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+    glow.classList.add('on');
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  }, { passive: true });
+  document.documentElement.addEventListener('mouseleave', () => glow.classList.remove('on'));
 })();
 
 /* ============ 標題終端解碼效果 ============ */

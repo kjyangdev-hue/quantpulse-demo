@@ -71,6 +71,14 @@ button{font-family:inherit;cursor:pointer}
   html{scroll-behavior:auto}
 }
 
+/* 滑鼠光暈（與官網同款） */
+#cursor-glow{
+  position:fixed;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;
+  pointer-events:none;z-index:1;opacity:0;transition:opacity .35s;will-change:transform;
+  background:radial-gradient(circle,color-mix(in srgb,var(--brand) 11%,transparent) 0%,color-mix(in srgb,var(--brand) 4%,transparent) 38%,transparent 64%);
+}
+#cursor-glow.on{opacity:1}
+
 /* ============ 頂部狀態列 ============ */
 .nav{
   position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border-strong);
@@ -318,6 +326,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 </style>
 </head>
 <body>
+<div id="cursor-glow" aria-hidden="true"></div>
 
 <!-- 導覽 -->
 <nav class="nav">
@@ -526,6 +535,27 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
+/* ============ 滑鼠光暈：lerp 平滑跟隨 ============ */
+(function cursorGlow() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+  const glow = document.getElementById('cursor-glow');
+  let tx = innerWidth / 2, ty = innerHeight / 2, cx = tx, cy = ty, running = false;
+  function tick() {
+    cx += (tx - cx) * 0.16;
+    cy += (ty - cy) * 0.16;
+    glow.style.transform = `translate(${cx.toFixed(1)}px, ${cy.toFixed(1)}px)`;
+    if (Math.abs(tx - cx) > 0.3 || Math.abs(ty - cy) > 0.3) requestAnimationFrame(tick);
+    else running = false;
+  }
+  addEventListener('mousemove', (e) => {
+    tx = e.clientX; ty = e.clientY;
+    glow.classList.add('on');
+    if (!running) { running = true; requestAnimationFrame(tick); }
+  }, { passive: true });
+  document.documentElement.addEventListener('mouseleave', () => glow.classList.remove('on'));
+})();
+
 /* ============ 資料初始化：真實歷史快照（Yahoo Finance），離線以模擬備援 ============ */
 const SYMBOLS = {
   '2330': { label: '台積電 2330', file: 'data/2330.json', fallbackSeed: 69, fallbackStart: 1920 },
