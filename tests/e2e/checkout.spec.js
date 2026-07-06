@@ -76,3 +76,26 @@ test('官網定價按鈕帶入方案參數', async ({ page }) => {
   await expect(page.locator('#plan-label')).toContainText('Pro 月訂閱');
   await expect(page.locator('#pay-label')).toContainText('NT$ 1,290');
 });
+
+test('Pro 資格跨頁保存：官網完成結帳後進 DEMO 仍為解鎖', async ({ page }) => {
+  const futureExp = `12/${String((new Date().getFullYear() + 3) % 100).padStart(2, '0')}`;
+  await page.goto('/');
+  await page.locator('#pricing').scrollIntoViewIfNeeded();
+  await page.locator('.plan.hot [data-open-checkout]').click();
+  await expect(page.locator('#checkout-modal')).toHaveClass(/show/);
+  await page.locator('#cc-name').fill('楊測試');
+  await page.locator('#cc-number').fill('4242 4242 4242 4242');
+  await page.locator('#cc-exp').fill(futureExp);
+  await page.locator('#cc-cvc').fill('123');
+  await page.locator('#checkout-form button[type="submit"]').click();
+  await expect(page.locator('[data-step="success"]')).toBeVisible({ timeout: 6000 });
+
+  // 同分頁跳轉進 DEMO：Pro 策略卡應仍解鎖，升級入口隱藏（跨頁保存）
+  await page.goto('/app.html');
+  await expect(page.locator('.strategy[data-strategy="pro"]')).not.toHaveClass(/locked/);
+  await expect(page.locator('#btn-upgrade')).toBeHidden();
+
+  // 重新整理 DEMO 頁後仍保持解鎖
+  await page.reload();
+  await expect(page.locator('.strategy[data-strategy="pro"]')).not.toHaveClass(/locked/);
+});
