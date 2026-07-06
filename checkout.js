@@ -126,7 +126,7 @@
             <span class="err"></span>
           </label>
         </div>
-        <div class="m-divider">電子發票（模擬開立）</div>
+        <div class="m-divider">綠界 ECPay 電子發票（模擬開立）</div>
         <label>統一編號（選填，公司戶報帳）
           <input id="inv-gui" inputmode="numeric" placeholder="12345678" maxlength="8">
           <span class="err"></span>
@@ -152,8 +152,9 @@
         <path d="M23 38.5 L33 48 L52 28"/>
       </svg>
       <h3>付款成功！</h3>
-      <p style="color:var(--ink-2);font-size:.9rem;margin-top:4px">已自動開立電子發票（模擬）</p>
+      <p style="color:var(--ink-2);font-size:.9rem;margin-top:4px">已自動開立綠界 ECPay 電子發票（模擬）</p>
       <div class="inv">
+        <div>開立平台 <b>綠界 ECPay（模擬）</b></div>
         <div>發票號碼 <b id="inv-number">--</b></div>
         <div>開立方式 <b id="inv-method">--</b></div>
         <div>金額 <b id="inv-amount">NT$ 1,290</b></div>
