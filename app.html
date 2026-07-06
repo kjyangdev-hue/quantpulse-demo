@@ -531,7 +531,7 @@ footer{margin-top:var(--space-7);border-top:1px solid var(--border-strong);paddi
   </div>
 </footer>
 
-<script src="logic.js?v=20260706b"></script>
+<script src="logic.js?v=20260706c"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 <script>
 'use strict';
@@ -1216,7 +1216,7 @@ function resetAnalysis() {
   document.querySelector('#btn-ai-scan .btn-label').textContent = '啟動 AI 策略分析';
 }
 /* 結帳成功：解鎖 Pro 策略卡（由 checkout.js 呼叫） */
-window.onCheckoutSuccess = function () {
+window.onCheckoutSuccess = function (opts) {
   const proCard = document.querySelector('.strategy.locked');
   if (proCard) {
     proCard.classList.remove('locked');
@@ -1230,7 +1230,7 @@ window.onCheckoutSuccess = function () {
     STRATEGY_NAMES.pro = '深度學習 Alpha';
     proCard.insertAdjacentHTML('beforeend', '<span class="s-check">✓ 已選</span>');
   }
-  showToast('<b>Pro 已啟用</b>：深度學習 Alpha 策略已解鎖');
+  if (!(opts && opts.silent)) showToast('<b>Pro 已啟用</b>：深度學習 Alpha 策略已解鎖'); // 載入時套回不重複彈提示
 };
 
 /* 訊號 CSV 匯出 */
@@ -1270,6 +1270,6 @@ document.getElementById('symbol-select').addEventListener('change', async (e) =>
 
 
 </script>
-<script src="checkout.js?v=20260706b"></script>
+<script src="checkout.js?v=20260706c"></script>
 </body>
 </html>

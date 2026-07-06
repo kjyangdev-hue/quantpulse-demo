@@ -182,6 +182,21 @@
     steps.forEach((s) => { s.hidden = s.dataset.step !== name; });
   }
   let subscribed = false;
+  const PRO_KEY = 'qp-pro'; // 跨頁保存 Pro 資格（與 qp-theme 同命名風格）
+  function proActive() { try { return localStorage.getItem(PRO_KEY) === '1'; } catch (e) { return false; } }
+  function persistPro() { try { localStorage.setItem(PRO_KEY, '1'); } catch (e) { /* 無痕模式：至少當頁有效 */ } }
+  function hideUpgradeEntries() { // 隱藏本頁所有升級入口，並收合面板提示避免留白
+    document.querySelectorAll('[data-open-checkout]').forEach((b) => { b.style.display = 'none'; });
+    const hint = document.getElementById('btn-upgrade-2');
+    if (hint && hint.parentElement) hint.parentElement.style.display = 'none';
+  }
+  function reflectPersistedPro() { // 頁面載入時把已保存的 Pro 資格套回 UI（不重跑結帳動畫）
+    if (typeof window.onCheckoutSuccess === 'function') window.onCheckoutSuccess({ silent: true }); // 解鎖 demo Pro 卡，載入時不彈 toast
+    const nav = document.getElementById('btn-upgrade');
+    if (nav) nav.style.display = 'none';
+    const hint = document.getElementById('btn-upgrade-2');
+    if (hint && hint.parentElement) hint.parentElement.style.display = 'none';
+  }
   function openCheckout(plan) {
     if (subscribed) { // 已訂閱：不再重複結帳，只提示
       if (window.showToast) window.showToast('<b>已是 Pro 訂閱</b>：全部 AI 策略皆已解鎖');
@@ -275,16 +290,17 @@
       $('inv-method').textContent = gui ? `統編 ${gui}` : (carrier ? `載具 ${carrier}` : '會員載具（雲端發票）');
       processing = false;
       subscribed = true; // 標記已訂閱，避免重複結帳
+      persistPro(); // 跨頁保存：demo 頁重新載入後仍記得已訂閱，不必重買
       goStep('success');
       form.reset(); // 成功後也清空敏感輸入
-      /* 隱藏所有升級入口 */
-      document.querySelectorAll('[data-open-checkout]').forEach((b) => { b.hidden = true; });
-      const hint = document.getElementById('btn-upgrade-2');
-      if (hint && hint.parentElement) hint.parentElement.hidden = true;
+      hideUpgradeEntries(); // 隱藏本頁所有升級入口
       if (typeof window.onCheckoutSuccess === 'function') window.onCheckoutSuccess();
     }, 2200);
   });
 
   $('checkout-done').addEventListener('click', () => backdrop.classList.remove('show'));
+
+  /* 跨頁保存：若先前已在任一頁完成訂閱，載入時直接套回 Pro 狀態（避免進 demo 頁又要重買） */
+  if (proActive()) { subscribed = true; reflectPersistedPro(); }
 
 })();
